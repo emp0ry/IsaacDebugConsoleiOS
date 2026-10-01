@@ -8,6 +8,8 @@ The same ARM64 dylib supports rootless jailbreak injection, LiveContainer privat
 direct app-bundle embedding. The core dylib uses only Apple system frameworks; ElleKit is used
 only by the optional jailbreak package as a loader.
 
+<img width="1434" height="660" alt="IMG_6484" src="https://github.com/user-attachments/assets/0a87235b-fcad-4f1b-916a-debff5253cb6" />
+
 ## Download
 
 Download the current build from [GitHub Releases](https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/latest).
