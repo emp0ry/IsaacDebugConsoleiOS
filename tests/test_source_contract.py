@@ -15,6 +15,8 @@ assert "kRemoveCollectibleOffset = 0x5051e0" in native
 assert "giveitem" in engine and "remove" in engine
 assert "suggestionsForInput" in engine
 assert "IDCPassthroughView" in controller
+assert "toggleKeyboard:" in controller
+assert "colorWithWhite:0 alpha:0.78" in controller
 assert "windowLevel" not in controller or "UIWindowLevelNormal" in controller
 assert "com.Nicalis.Isaac-iOS" in bootstrap
 

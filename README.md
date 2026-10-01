@@ -13,7 +13,8 @@ or Valve.
 
 Pause an active run. A **Console** button appears in the lower-left corner. The overlay does
 not create another window, so touches outside the panel continue to reach Isaac. Start typing
-to see suggestions; tap a suggestion to complete it.
+to see suggestions; tap a suggestion to complete it. The keyboard button in the command row
+hides the software keyboard and brings it back without closing the console.
 
 Available commands:
 

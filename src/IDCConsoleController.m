@@ -36,11 +36,13 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 @property(nonatomic, strong) UIButton *runButton;
 @property(nonatomic, strong) UIButton *previousButton;
 @property(nonatomic, strong) UIButton *nextButton;
+@property(nonatomic, strong) UIButton *keyboardButton;
 @property(nonatomic, strong) NSTimer *timer;
 @property(nonatomic, copy) NSArray<IDCCommandSuggestion *> *suggestions;
 @property(nonatomic, strong) NSMutableArray<NSString *> *history;
 @property(nonatomic) NSInteger historyIndex;
 @property(nonatomic) CGFloat keyboardOverlap;
+@property(nonatomic) BOOL keyboardVisible;
 @end
 
 @implementation IDCConsoleController
@@ -114,6 +116,10 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 
     UIButton *consoleButton = [self buttonWithTitle:@"Console" action:@selector(toggleConsole:)];
     consoleButton.frame = CGRectMake(14, window.bounds.size.height - 48, 82, 34);
+    consoleButton.backgroundColor = [UIColor colorWithWhite:0 alpha:0.78];
+    consoleButton.layer.cornerRadius = 8;
+    consoleButton.layer.borderColor = [UIColor colorWithWhite:1 alpha:0.28].CGColor;
+    consoleButton.titleLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightBold];
     consoleButton.autoresizingMask = UIViewAutoresizingFlexibleRightMargin |
         UIViewAutoresizingFlexibleTopMargin;
     consoleButton.hidden = YES;
@@ -153,7 +159,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     output.selectable = YES;
     output.layer.cornerRadius = 6;
     output.textContainerInset = UIEdgeInsetsMake(7, 8, 7, 8);
-    output.text = @"Isaac Debug Console iOS 0.1.0\nType help for commands. Suggestions update while you type.\n";
+    output.text = @"Isaac Debug Console iOS 0.1.1\nType help for commands. Suggestions update while you type.\n";
     [panel addSubview:output];
 
     UITableView *suggestionsTable = [[UITableView alloc] initWithFrame:CGRectZero
@@ -193,10 +199,13 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 
     UIButton *previous = [self buttonWithTitle:@"↑" action:@selector(previousHistory:)];
     UIButton *next = [self buttonWithTitle:@"↓" action:@selector(nextHistory:)];
+    UIButton *keyboard = [self buttonWithTitle:@"⌨︎↓" action:@selector(toggleKeyboard:)];
+    keyboard.accessibilityLabel = @"Hide keyboard";
     UIButton *run = [self buttonWithTitle:@"Run" action:@selector(runCommand:)];
     run.backgroundColor = [UIColor colorWithRed:0.05 green:0.48 blue:0.68 alpha:1];
     [panel addSubview:previous];
     [panel addSubview:next];
+    [panel addSubview:keyboard];
     [panel addSubview:run];
 
     [root addSubview:consoleButton];
@@ -211,6 +220,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     self.inputField = input;
     self.previousButton = previous;
     self.nextButton = next;
+    self.keyboardButton = keyboard;
     self.runButton = run;
     [self layoutConsole];
     [self updateSuggestions];
@@ -234,11 +244,15 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 
     CGFloat bottomY = panelHeight - 44;
     CGFloat historyWidth = 34;
+    CGFloat keyboardWidth = 40;
     CGFloat runWidth = 52;
     self.previousButton.frame = CGRectMake(8, bottomY, historyWidth, 34);
     self.nextButton.frame = CGRectMake(46, bottomY, historyWidth, 34);
+    self.keyboardButton.frame = CGRectMake(84, bottomY, keyboardWidth, 34);
     self.runButton.frame = CGRectMake(panelWidth - runWidth - 8, bottomY, runWidth, 34);
-    self.inputField.frame = CGRectMake(84, bottomY, panelWidth - 84 - runWidth - 12, 34);
+    CGFloat inputX = CGRectGetMaxX(self.keyboardButton.frame) + 4;
+    self.inputField.frame = CGRectMake(inputX, bottomY,
+        MAX(72, panelWidth - inputX - runWidth - 12), 34);
 
     CGFloat suggestionHeight = self.suggestions.count
         ? MIN(96, self.suggestions.count * self.suggestionsTable.rowHeight) : 0;
@@ -345,6 +359,21 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     [self updateSuggestions];
 }
 
+- (void)toggleKeyboard:(UIButton *)sender {
+    (void)sender;
+    if (self.inputField.isFirstResponder) {
+        [self.inputField resignFirstResponder];
+        self.keyboardVisible = NO;
+        [self.keyboardButton setTitle:@"⌨︎↑" forState:UIControlStateNormal];
+        self.keyboardButton.accessibilityLabel = @"Show keyboard";
+    } else {
+        [self.inputField becomeFirstResponder];
+        self.keyboardVisible = YES;
+        [self.keyboardButton setTitle:@"⌨︎↓" forState:UIControlStateNormal];
+        self.keyboardButton.accessibilityLabel = @"Hide keyboard";
+    }
+}
+
 - (void)inputChanged:(UITextField *)field {
     (void)field;
     [self updateSuggestions];
@@ -394,6 +423,11 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     CGRect screenFrame = [notification.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
     CGRect localFrame = [window convertRect:screenFrame fromWindow:nil];
     self.keyboardOverlap = MAX(0, CGRectGetMaxY(window.bounds) - CGRectGetMinY(localFrame));
+    self.keyboardVisible = self.keyboardOverlap > 1;
+    [self.keyboardButton setTitle:self.keyboardVisible ? @"⌨︎↓" : @"⌨︎↑"
+                         forState:UIControlStateNormal];
+    self.keyboardButton.accessibilityLabel = self.keyboardVisible
+        ? @"Hide keyboard" : @"Show keyboard";
     NSTimeInterval duration = [notification.userInfo[UIKeyboardAnimationDurationUserInfoKey]
         doubleValue];
     [UIView animateWithDuration:duration animations:^{ [self layoutConsole]; }];
@@ -403,6 +437,9 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     NSTimeInterval duration = [notification.userInfo[UIKeyboardAnimationDurationUserInfoKey]
         doubleValue];
     self.keyboardOverlap = 0;
+    self.keyboardVisible = NO;
+    [self.keyboardButton setTitle:@"⌨︎↑" forState:UIControlStateNormal];
+    self.keyboardButton.accessibilityLabel = @"Show keyboard";
     [UIView animateWithDuration:duration animations:^{ [self layoutConsole]; }];
 }
 
