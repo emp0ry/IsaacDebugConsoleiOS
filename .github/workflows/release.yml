@@ -67,9 +67,12 @@ jobs:
             dist/SHA256SUMS
           )
           for file in "${required[@]}"; do test -s "$file"; done
-          unzip -l dist/IsaacDebugConsole-LiveContainer.framework.zip | grep -q 'IsaacDebugConsole.framework/IsaacDebugConsole'
-          unzip -l dist/IsaacDebugConsole-Embedded.zip | grep -q 'IsaacDebugConsole.dylib'
-          dpkg-deb -c dist/IsaacDebugConsole-rootless.deb | grep -q 'IsaacDebugConsole.dylib'
+          unzip -l dist/IsaacDebugConsole-LiveContainer.framework.zip > "$RUNNER_TEMP/livecontainer-files.txt"
+          unzip -l dist/IsaacDebugConsole-Embedded.zip > "$RUNNER_TEMP/embedded-files.txt"
+          dpkg-deb -c dist/IsaacDebugConsole-rootless.deb > "$RUNNER_TEMP/deb-files.txt"
+          grep -q 'IsaacDebugConsole.framework/IsaacDebugConsole' "$RUNNER_TEMP/livecontainer-files.txt"
+          grep -q 'IsaacDebugConsole.dylib' "$RUNNER_TEMP/embedded-files.txt"
+          grep -q 'IsaacDebugConsole.dylib' "$RUNNER_TEMP/deb-files.txt"
 
       - name: Upload verified build
         uses: actions/upload-artifact@v6
