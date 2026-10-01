@@ -1,0 +1,9 @@
+Package: com.emp0ry.isaacdebugconsole
+Name: Isaac Debug Console iOS
+Version: 0.1.0
+Architecture: iphoneos-arm64
+Description: In-game debug console with command hints for The Binding of Isaac on iOS.
+Maintainer: emp0ry
+Author: emp0ry
+Section: Tweaks
+Depends: firmware (>= 15.0), ellekit
