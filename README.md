@@ -2,7 +2,7 @@
 
 An in-game debug console for the native iOS release of *The Binding of Isaac: Rebirth +
 Repentance*. It provides a compact UIKit console, live command suggestions, command history,
-and a small set of native run-inspection and item commands.
+and native run-inspection, inventory, room-spawn, and rewind commands.
 
 This is an independent project inspired by the console experience provided by
 [REPENTOGON](https://github.com/TeamREPENTOGON/REPENTOGON). It does not contain or copy
@@ -25,12 +25,41 @@ Available commands:
 - `position` / `pos` — player type and coordinates
 - `inventory` / `inv` — owned collectible IDs, names, and counts
 - `items <name|id>` / `find` — search the game's collectible catalog
+- `trinkets [name|id]` — list or search trinkets
+- `cards [name|id]` — list or search cards
+- `runes [name|id]` — list or search runes and soul stones
+- `pilleffects [name|id]` / `pills` — list or search pill effects
 - `giveitem <cID|name>` / `g` — add a collectible through Isaac's native player function
 - `remove <cID|name>` / `r` — remove one collectible through Isaac's native player function
+- `spawn <type.variant.subtype>` / `s` — spawn a native entity beside the player
+- `spawnpickup <variant.subtype>` / `pickup` — spawn a pickup (`EntityType 5`)
+- `spawnitem <cID|name>` / `si` — spawn a collectible pedestal
+- `spawntrinket <tID|name>` / `st` — spawn a trinket
+- `spawncard <ID|name>` / `sc` — spawn a card
+- `spawnrune <ID|1-10|name>` / `sr` — spawn a rune or soul stone
+- `spawnpill <color|effect> [horse]` / `sp` — spawn a normal or horse pill
+- `rewind` / `hourglass` — invoke Isaac's real Glowing Hourglass rewind logic
 - `history`, `clear`, `version`, `close`
 
-`giveitem` and `remove` are allowed only while a run is paused. Native addresses, the Isaac
-Mach-O UUID, the player RTTI/vtable, and function prologues are validated before a mutation.
+The empty suggestion list contains every command and is scrollable. Item, trinket, card, rune,
+and pill-effect suggestions come from the XML catalogs bundled with the installed game. A pill
+effect can be spawned only when that effect is assigned to one of the current run's thirteen
+normal pill colors. Use a numeric color from 1 through 14 to spawn a specific visual color;
+append `horse` for a horse pill. For example:
+
+```text
+spawnitem sacred heart
+spawncard 1
+spawnrune jera
+spawnpill effect 2
+spawnpill 7 horse
+spawn 5.100.1
+rewind
+```
+
+Every modifying command is allowed only while a run is paused. Native addresses, the Isaac
+Mach-O UUID, the player RTTI/vtable, and each function prologue are validated before a native
+call.
 
 ## Compatibility
 
@@ -65,10 +94,12 @@ used.
 ## Safety and limitations
 
 Debug commands can change a run and its save state. Back up the Isaac application container
-before using mutation commands. The first release intentionally implements a small verified
-command set rather than pretending that the desktop Lua/REPENTOGON command surface exists on
-iOS. Item names are derived from Isaac's bundled `items.xml`, so no copyrighted game database
-is redistributed.
+before using mutation commands. `rewind` deliberately has the same room-state implications as
+using Glowing Hourglass and is not an undo button for arbitrary console commands. Generic entity
+spawning is constrained to native entity types 2 through 1000, but invalid game-level
+type/variant combinations can still behave unexpectedly. Catalog names are derived at runtime
+from Isaac's bundled `items.xml` and `pocketitems.xml`; no copyrighted game database is
+redistributed.
 
 See [docs/NATIVE_LAYOUT.md](docs/NATIVE_LAYOUT.md) for the verified executable layout.
 

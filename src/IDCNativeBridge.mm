@@ -21,7 +21,11 @@ constexpr uintptr_t kGameGlobalOffset = 0xac3b90;
 constexpr size_t kGameCurrentRoomOffset = 0x21550;
 constexpr size_t kGameRunSeedOffset = 0x25d44;
 constexpr size_t kGamePauseStateOffset = 0x10dfd8;
+constexpr size_t kGameItemPoolOffset = 0x242c0;
 constexpr size_t kGamePlayerVectorScanLimit = 512 * 1024;
+constexpr size_t kItemPoolPillEffectsOffset = 0xa2c;
+constexpr uint32_t kStandardPillColorCount = 13;
+constexpr uint32_t kHorsePillFlag = 1u << 11;
 
 constexpr size_t kEntityTypeOffset = 0x38;
 constexpr size_t kEntityPositionOffset = 0x310;
@@ -34,8 +38,21 @@ constexpr size_t kRoomConfigTypeOffset = 0x8;
 // Reverse-verified function RVAs for UUID F4357753-A25F-30EE-BACF-63709F902895.
 constexpr uintptr_t kAddCollectibleOffset = 0x500588;
 constexpr uintptr_t kRemoveCollectibleOffset = 0x5051e0;
+constexpr uintptr_t kGameSpawnOffset = 0x131080;
+constexpr uintptr_t kUseActiveItemOffset = 0x2ebe10;
 constexpr uint32_t kAddCollectiblePrologue[] = {0xd10483ff, 0x6d0a2beb, 0x6d0b23e9};
 constexpr uint32_t kRemoveCollectiblePrologue[] = {0xd10283ff, 0xa9046ffc, 0xa90567fa};
+constexpr uint32_t kGameSpawnPrologue[] = {0xa9ba6ffc, 0xa90167fa, 0xa9025ff8};
+constexpr uint32_t kUseActiveItemPrologue[] = {0xd10683ff, 0x6d1133ed, 0x6d122beb};
+
+constexpr int kPickupEntityType = 5;
+constexpr int kPillPickupVariant = 70;
+constexpr int kGlowingHourglassCollectible = 422;
+
+struct NativeVector {
+    float x = 0;
+    float y = 0;
+};
 
 struct RemotePointerVector {
     uintptr_t begin = 0;
@@ -396,31 +413,44 @@ static bool MatchPrologue(const mach_header_64 *header, uintptr_t offset,
     return snapshot;
 }
 
-- (NSString *)validateMutationForCollectible:(NSInteger)collectibleID {
+- (NSString *)validatePausedNativeAction {
     if (!self.supportedBuild) return @"Unsupported Isaac executable; mutation disabled.";
-    if (collectibleID < 1 || collectibleID > (NSInteger)kMaximumCollectibleID) {
-        return [NSString stringWithFormat:@"Collectible ID must be between 1 and %zu.",
-                                          kMaximumCollectibleID];
-    }
     IDCNativeSnapshot *snapshot = [self refreshSnapshot];
     if (!snapshot.inGame || !_currentPlayer) return @"No active player was found.";
     if (!snapshot.pauseStateAvailable || !snapshot.paused) {
         return @"Pause the run before using modifying commands.";
     }
-    if (!MatchPrologue(_isaacHeader, kAddCollectibleOffset,
-                       kAddCollectiblePrologue,
-                       sizeof(kAddCollectiblePrologue) / sizeof(kAddCollectiblePrologue[0])) ||
-        !MatchPrologue(_isaacHeader, kRemoveCollectibleOffset,
-                       kRemoveCollectiblePrologue,
-                       sizeof(kRemoveCollectiblePrologue) /
-                           sizeof(kRemoveCollectiblePrologue[0]))) {
-        return @"Native command signatures failed validation; mutation disabled.";
+    return nil;
+}
+
+- (BOOL)matchesFunctionAtOffset:(uintptr_t)offset
+                       prologue:(const uint32_t *)prologue
+                          count:(size_t)count {
+    return _isaacHeader && MatchPrologue(_isaacHeader, offset, prologue, count);
+}
+
+- (NSString *)validateCollectible:(NSInteger)collectibleID
+                    functionOffset:(uintptr_t)functionOffset
+                       prologue:(const uint32_t *)prologue
+                           count:(size_t)count {
+    if (collectibleID < 1 || collectibleID > (NSInteger)kMaximumCollectibleID) {
+        return [NSString stringWithFormat:@"Collectible ID must be between 1 and %zu.",
+                                          kMaximumCollectibleID];
+    }
+    NSString *error = [self validatePausedNativeAction];
+    if (error) return error;
+    if (![self matchesFunctionAtOffset:functionOffset prologue:prologue count:count]) {
+        return @"Native command signature failed validation; mutation disabled.";
     }
     return nil;
 }
 
 - (NSString *)giveCollectible:(NSInteger)collectibleID {
-    NSString *error = [self validateMutationForCollectible:collectibleID];
+    NSString *error = [self validateCollectible:collectibleID
+                                  functionOffset:kAddCollectibleOffset
+                                        prologue:kAddCollectiblePrologue
+                                           count:sizeof(kAddCollectiblePrologue) /
+                                               sizeof(kAddCollectiblePrologue[0])];
     if (error) return error;
     using AddCollectible = void (*)(void *, int, int, bool, int, int, int);
     AddCollectible function = reinterpret_cast<AddCollectible>(
@@ -436,7 +466,11 @@ static bool MatchPrologue(const mach_header_64 *header, uintptr_t offset,
 }
 
 - (NSString *)removeCollectible:(NSInteger)collectibleID {
-    NSString *error = [self validateMutationForCollectible:collectibleID];
+    NSString *error = [self validateCollectible:collectibleID
+                                  functionOffset:kRemoveCollectibleOffset
+                                        prologue:kRemoveCollectiblePrologue
+                                           count:sizeof(kRemoveCollectiblePrologue) /
+                                               sizeof(kRemoveCollectiblePrologue[0])];
     if (error) return error;
     IDCNativeSnapshot *before = _lastSnapshot ?: [self refreshSnapshot];
     NSInteger oldCount = before.collectibleCounts[@(collectibleID)].integerValue;
@@ -451,6 +485,96 @@ static bool MatchPrologue(const mach_header_64 *header, uintptr_t offset,
         return @"The native RemoveCollectible call completed, but inventory verification failed.";
     }
     IDCLog(@"remove c%ld verified", (long)collectibleID);
+    return nil;
+}
+
+- (NSString *)spawnEntityType:(NSInteger)type
+                       variant:(NSInteger)variant
+                       subtype:(NSInteger)subtype {
+    if (type < 2 || type > 1000) return @"Entity type must be between 2 and 1000.";
+    if (variant < 0 || variant > 9999) return @"Entity variant must be between 0 and 9999.";
+    if (subtype < 0 || subtype > 9999) return @"Entity subtype must be between 0 and 9999.";
+    NSString *error = [self validatePausedNativeAction];
+    if (error) return error;
+    if (![self matchesFunctionAtOffset:kGameSpawnOffset
+                              prologue:kGameSpawnPrologue
+                                 count:sizeof(kGameSpawnPrologue) /
+                                     sizeof(kGameSpawnPrologue[0])]) {
+        return @"Native spawn signature failed validation; spawning disabled.";
+    }
+    vm_address_t game = 0;
+    if (![self readGameAddress:&game]) return @"The active Game object is unavailable.";
+
+    NativeVector position{_lastSnapshot.playerX, _lastSnapshot.playerY};
+    position.x += position.x < 320.0f ? 64.0f : -64.0f;
+    NativeVector velocity{};
+    uint32_t seed = arc4random();
+    if (!seed) seed = 1;
+    using GameSpawn = void *(*)(void *, unsigned int, unsigned int,
+                                const NativeVector *, const NativeVector *, void *,
+                                unsigned int, unsigned int);
+    GameSpawn function = reinterpret_cast<GameSpawn>(
+        reinterpret_cast<uintptr_t>(_isaacHeader) + kGameSpawnOffset);
+    void *entity = function(reinterpret_cast<void *>(game), (unsigned int)type,
+                            (unsigned int)variant, &position, &velocity, nullptr,
+                            (unsigned int)subtype, seed);
+    if (!entity) return @"Isaac rejected the spawn request.";
+    int32_t identity[3]{};
+    if (!ReadMemory(reinterpret_cast<vm_address_t>(entity) + kEntityTypeOffset,
+                    identity, sizeof(identity)) || identity[0] != type ||
+        identity[1] != variant || identity[2] != subtype) {
+        return @"The entity was created, but identity verification failed.";
+    }
+    IDCLog(@"spawn verified: %ld.%ld.%ld", (long)type, (long)variant, (long)subtype);
+    return nil;
+}
+
+- (NSString *)spawnPillEffect:(NSInteger)effectID
+                          horse:(BOOL)horse
+                  resolvedColor:(NSInteger *)resolvedColor {
+    if (effectID < 0 || effectID > 49) return @"Pill effect ID must be between 0 and 49.";
+    NSString *error = [self validatePausedNativeAction];
+    if (error) return error;
+    vm_address_t game = 0;
+    if (![self readGameAddress:&game]) return @"The active Game object is unavailable.";
+    uintptr_t itemPool = game + kGameItemPoolOffset;
+    NSInteger color = 0;
+    for (uint32_t candidate = 1; candidate <= kStandardPillColorCount; ++candidate) {
+        int32_t mappedEffect = -1;
+        if (ReadMemory(itemPool + kItemPoolPillEffectsOffset +
+                           candidate * sizeof(mappedEffect),
+                       &mappedEffect, sizeof(mappedEffect)) && mappedEffect == effectID) {
+            color = candidate;
+            break;
+        }
+    }
+    if (!color) return @"That pill effect is not present in this run's pill pool.";
+    NSInteger rawSubtype = color | (horse ? kHorsePillFlag : 0);
+    error = [self spawnEntityType:kPickupEntityType variant:kPillPickupVariant
+                          subtype:rawSubtype];
+    if (!error && resolvedColor) *resolvedColor = color;
+    return error;
+}
+
+- (NSString *)rewind {
+    NSString *error = [self validatePausedNativeAction];
+    if (error) return error;
+    if (![self matchesFunctionAtOffset:kUseActiveItemOffset
+                              prologue:kUseActiveItemPrologue
+                                 count:sizeof(kUseActiveItemPrologue) /
+                                     sizeof(kUseActiveItemPrologue[0])]) {
+        return @"Native active-item signature failed validation; rewind disabled.";
+    }
+    using UseActiveItem = void (*)(void *, unsigned int, unsigned int,
+                                   unsigned int, unsigned int, bool);
+    UseActiveItem function = reinterpret_cast<UseActiveItem>(
+        reinterpret_cast<uintptr_t>(_isaacHeader) + kUseActiveItemOffset);
+    vm_address_t player = _currentPlayer;
+    _currentPlayer = 0;
+    _lastSnapshot = nil;
+    function(reinterpret_cast<void *>(player), kGlowingHourglassCollectible,
+             0, 1, 0, true);
+    IDCLog(@"rewind requested through Glowing Hourglass native logic");
     return nil;
 }
 

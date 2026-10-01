@@ -23,6 +23,13 @@ NS_ASSUME_NONNULL_BEGIN
 - (IDCNativeSnapshot *)refreshSnapshot;
 - (nullable NSString *)giveCollectible:(NSInteger)collectibleID;
 - (nullable NSString *)removeCollectible:(NSInteger)collectibleID;
+- (nullable NSString *)spawnEntityType:(NSInteger)type
+                               variant:(NSInteger)variant
+                               subtype:(NSInteger)subtype;
+- (nullable NSString *)spawnPillEffect:(NSInteger)effectID
+                                  horse:(BOOL)horse
+                          resolvedColor:(NSInteger * _Nullable)resolvedColor;
+- (nullable NSString *)rewind;
 @end
 
 NS_ASSUME_NONNULL_END

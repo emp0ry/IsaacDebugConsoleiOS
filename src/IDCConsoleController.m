@@ -159,7 +159,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     output.selectable = YES;
     output.layer.cornerRadius = 6;
     output.textContainerInset = UIEdgeInsetsMake(7, 8, 7, 8);
-    output.text = @"Isaac Debug Console iOS 0.1.1\nType help for commands. Suggestions update while you type.\n";
+    output.text = @"Isaac Debug Console iOS 0.2.0\nType help for every command. Suggestions update while you type.\n";
     [panel addSubview:output];
 
     UITableView *suggestionsTable = [[UITableView alloc] initWithFrame:CGRectZero
@@ -199,7 +199,8 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 
     UIButton *previous = [self buttonWithTitle:@"↑" action:@selector(previousHistory:)];
     UIButton *next = [self buttonWithTitle:@"↓" action:@selector(nextHistory:)];
-    UIButton *keyboard = [self buttonWithTitle:@"⌨︎↓" action:@selector(toggleKeyboard:)];
+    UIButton *keyboard = [self buttonWithTitle:@"↓" action:@selector(toggleKeyboard:)];
+    keyboard.titleLabel.font = [UIFont systemFontOfSize:18 weight:UIFontWeightSemibold];
     keyboard.accessibilityLabel = @"Hide keyboard";
     UIButton *run = [self buttonWithTitle:@"Run" action:@selector(runCommand:)];
     run.backgroundColor = [UIColor colorWithRed:0.05 green:0.48 blue:0.68 alpha:1];
@@ -244,18 +245,19 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 
     CGFloat bottomY = panelHeight - 44;
     CGFloat historyWidth = 34;
-    CGFloat keyboardWidth = 40;
+    CGFloat keyboardWidth = 34;
     CGFloat runWidth = 52;
     self.previousButton.frame = CGRectMake(8, bottomY, historyWidth, 34);
     self.nextButton.frame = CGRectMake(46, bottomY, historyWidth, 34);
-    self.keyboardButton.frame = CGRectMake(84, bottomY, keyboardWidth, 34);
     self.runButton.frame = CGRectMake(panelWidth - runWidth - 8, bottomY, runWidth, 34);
-    CGFloat inputX = CGRectGetMaxX(self.keyboardButton.frame) + 4;
+    self.keyboardButton.frame = CGRectMake(CGRectGetMinX(self.runButton.frame) - keyboardWidth - 4,
+                                           bottomY, keyboardWidth, 34);
+    CGFloat inputX = CGRectGetMaxX(self.nextButton.frame) + 4;
     self.inputField.frame = CGRectMake(inputX, bottomY,
-        MAX(72, panelWidth - inputX - runWidth - 12), 34);
+        MAX(72, CGRectGetMinX(self.keyboardButton.frame) - inputX - 4), 34);
 
     CGFloat suggestionHeight = self.suggestions.count
-        ? MIN(96, self.suggestions.count * self.suggestionsTable.rowHeight) : 0;
+        ? MIN(160, self.suggestions.count * self.suggestionsTable.rowHeight) : 0;
     CGFloat outputTop = 40;
     CGFloat outputBottom = bottomY - 6 - suggestionHeight;
     self.outputView.frame = CGRectMake(8, outputTop, panelWidth - 16,
@@ -364,12 +366,12 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     if (self.inputField.isFirstResponder) {
         [self.inputField resignFirstResponder];
         self.keyboardVisible = NO;
-        [self.keyboardButton setTitle:@"⌨︎↑" forState:UIControlStateNormal];
+        [self.keyboardButton setTitle:@"↑" forState:UIControlStateNormal];
         self.keyboardButton.accessibilityLabel = @"Show keyboard";
     } else {
         [self.inputField becomeFirstResponder];
         self.keyboardVisible = YES;
-        [self.keyboardButton setTitle:@"⌨︎↓" forState:UIControlStateNormal];
+        [self.keyboardButton setTitle:@"↓" forState:UIControlStateNormal];
         self.keyboardButton.accessibilityLabel = @"Hide keyboard";
     }
 }
@@ -380,7 +382,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 }
 
 - (void)updateSuggestions {
-    self.suggestions = [self.engine suggestionsForInput:self.inputField.text ?: @"" limit:5];
+    self.suggestions = [self.engine suggestionsForInput:self.inputField.text ?: @"" limit:64];
     [self.suggestionsTable reloadData];
     [self layoutConsole];
 }
@@ -424,7 +426,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     CGRect localFrame = [window convertRect:screenFrame fromWindow:nil];
     self.keyboardOverlap = MAX(0, CGRectGetMaxY(window.bounds) - CGRectGetMinY(localFrame));
     self.keyboardVisible = self.keyboardOverlap > 1;
-    [self.keyboardButton setTitle:self.keyboardVisible ? @"⌨︎↓" : @"⌨︎↑"
+    [self.keyboardButton setTitle:self.keyboardVisible ? @"↓" : @"↑"
                          forState:UIControlStateNormal];
     self.keyboardButton.accessibilityLabel = self.keyboardVisible
         ? @"Hide keyboard" : @"Show keyboard";
@@ -438,7 +440,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
         doubleValue];
     self.keyboardOverlap = 0;
     self.keyboardVisible = NO;
-    [self.keyboardButton setTitle:@"⌨︎↑" forState:UIControlStateNormal];
+    [self.keyboardButton setTitle:@"↑" forState:UIControlStateNormal];
     self.keyboardButton.accessibilityLabel = @"Show keyboard";
     [UIView animateWithDuration:duration animations:^{ [self layoutConsole]; }];
 }
