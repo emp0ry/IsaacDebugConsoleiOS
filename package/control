@@ -1,6 +1,6 @@
 Package: com.emp0ry.isaacdebugconsole
 Name: Isaac Debug Console iOS
-Version: 0.2.0
+Version: 0.3.0
 Architecture: iphoneos-arm64
 Description: In-game Isaac console with native spawn, inventory, and rewind commands.
 Maintainer: emp0ry

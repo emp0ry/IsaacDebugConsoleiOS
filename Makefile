@@ -1,6 +1,7 @@
 SHELL := /bin/zsh
 
 PROJECT_ROOT := $(CURDIR)
+VERSION := $(shell awk '/^Version:/ { print $$2 }' $(PROJECT_ROOT)/package/control)
 SDK := $(shell xcrun --sdk iphoneos --show-sdk-path)
 CLANG := $(shell xcrun --sdk iphoneos --find clang)
 MIN_IOS ?= 15.0
@@ -13,6 +14,8 @@ LC_FRAMEWORK := $(PROJECT_ROOT)/build/IsaacDebugConsole.framework
 LC_ZIP := $(PROJECT_ROOT)/packages/IsaacDebugConsole-LiveContainer.framework.zip
 EMBEDDED_STAGE := $(PROJECT_ROOT)/build/IsaacDebugConsole-Embedded
 EMBEDDED_ZIP := $(PROJECT_ROOT)/dist/IsaacDebugConsole-Embedded.zip
+FULL_STAGE := $(PROJECT_ROOT)/build/IsaacDebugConsole-Full-Build
+FULL_ZIP := $(PROJECT_ROOT)/dist/IsaacDebugConsole-Full-Build.zip
 
 SOURCES := \
 	$(PROJECT_ROOT)/src/IDCBootstrap.m \
@@ -96,6 +99,17 @@ release:
 		IsaacDebugConsole-rootless.deb \
 		IsaacDebugConsole-LiveContainer.framework.zip \
 		IsaacDebugConsole-Embedded.zip > SHA256SUMS
+	rm -rf "$(FULL_STAGE)" "$(FULL_ZIP)"
+	mkdir -p "$(FULL_STAGE)/docs"
+	cp "$(PROJECT_ROOT)/dist/IsaacDebugConsole.dylib" \
+		"$(PROJECT_ROOT)/dist/IsaacDebugConsole-rootless.deb" \
+		"$(PROJECT_ROOT)/dist/IsaacDebugConsole-LiveContainer.framework.zip" \
+		"$(PROJECT_ROOT)/dist/IsaacDebugConsole-Embedded.zip" \
+		"$(PROJECT_ROOT)/dist/SHA256SUMS" "$(FULL_STAGE)/"
+	cp "$(PROJECT_ROOT)/README.md" "$(PROJECT_ROOT)/LICENSE" "$(FULL_STAGE)/"
+	cp "$(PROJECT_ROOT)/docs/INSTALL.md" "$(PROJECT_ROOT)/docs/NATIVE_LAYOUT.md" \
+		"$(PROJECT_ROOT)/docs/RELEASE_NOTES_v$(VERSION).md" "$(FULL_STAGE)/docs/"
+	/usr/bin/ditto -c -k --sequesterRsrc --keepParent "$(FULL_STAGE)" "$(FULL_ZIP)"
 
 clean:
 	rm -rf "$(PROJECT_ROOT)/build" "$(PROJECT_ROOT)/package/stage" "$(PROJECT_ROOT)/dist"

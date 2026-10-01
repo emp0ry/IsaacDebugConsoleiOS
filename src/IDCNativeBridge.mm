@@ -22,6 +22,7 @@ constexpr size_t kGameCurrentRoomOffset = 0x21550;
 constexpr size_t kGameRunSeedOffset = 0x25d44;
 constexpr size_t kGamePauseStateOffset = 0x10dfd8;
 constexpr size_t kGameItemPoolOffset = 0x242c0;
+constexpr size_t kGameEntityFactoryOffset = 0x1cf430;
 constexpr size_t kGamePlayerVectorScanLimit = 512 * 1024;
 constexpr size_t kItemPoolPillEffectsOffset = 0xa2c;
 constexpr uint32_t kStandardPillColorCount = 13;
@@ -38,12 +39,16 @@ constexpr size_t kRoomConfigTypeOffset = 0x8;
 // Reverse-verified function RVAs for UUID F4357753-A25F-30EE-BACF-63709F902895.
 constexpr uintptr_t kAddCollectibleOffset = 0x500588;
 constexpr uintptr_t kRemoveCollectibleOffset = 0x5051e0;
-constexpr uintptr_t kGameSpawnOffset = 0x131080;
-constexpr uintptr_t kUseActiveItemOffset = 0x2ebe10;
+constexpr uintptr_t kGameSpawnOffset = 0x88fcbc;
+constexpr uintptr_t kUseActiveItemOffset = 0x580a28;
 constexpr uint32_t kAddCollectiblePrologue[] = {0xd10483ff, 0x6d0a2beb, 0x6d0b23e9};
 constexpr uint32_t kRemoveCollectiblePrologue[] = {0xd10283ff, 0xa9046ffc, 0xa90567fa};
-constexpr uint32_t kGameSpawnPrologue[] = {0xa9ba6ffc, 0xa90167fa, 0xa9025ff8};
-constexpr uint32_t kUseActiveItemPrologue[] = {0xd10683ff, 0x6d1133ed, 0x6d122beb};
+constexpr uint32_t kGameSpawnPrologue[] = {
+    0xd10283ff, 0xa9046ffc, 0xa90567fa, 0xa9065ff8
+};
+constexpr uint32_t kUseActiveItemPrologue[] = {
+    0x6db733ed, 0x6d012beb, 0x6d0223e9, 0xa9036ffc
+};
 
 constexpr int kPickupEntityType = 5;
 constexpr int kPillPickupVariant = 70;
@@ -320,6 +325,36 @@ static bool MatchPrologue(const mach_header_64 *header, uintptr_t offset,
     return YES;
 }
 
+- (BOOL)readSpawnContextAddress:(vm_address_t *)gameAddress error:(NSString **)error {
+    if (!_supportedBuild || !_isaacHeader || !gameAddress) {
+        if (error) *error = @"The native spawn context is unavailable.";
+        return NO;
+    }
+    vm_address_t game = 0;
+    if (![self readGameAddress:&game]) {
+        if (error) *error = @"The active Game object is unavailable.";
+        return NO;
+    }
+    uintptr_t factory = 0;
+    uintptr_t room = 0;
+    if (!ReadMemory(game + kGameEntityFactoryOffset, &factory, sizeof(factory)) ||
+        factory < 0x100000000ULL || factory == UINTPTR_MAX ||
+        !ReadMemory(game + kGameCurrentRoomOffset, &room, sizeof(room)) ||
+        room < 0x100000000ULL) {
+        if (error) *error = @"Isaac's spawn context is not ready in this room.";
+        return NO;
+    }
+    uint8_t factoryProbe = 0;
+    uint8_t roomProbe = 0;
+    if (!ReadMemory(factory, &factoryProbe, sizeof(factoryProbe)) ||
+        !ReadMemory(room, &roomProbe, sizeof(roomProbe))) {
+        if (error) *error = @"Isaac's spawn context failed memory validation.";
+        return NO;
+    }
+    *gameAddress = game;
+    return YES;
+}
+
 - (BOOL)resolvePlayersFromGame:(vm_address_t)game players:(NativePlayers&)players {
     if (_playerVectorOffset != NSUIntegerMax &&
         ReadPlayerVector(_playerVTables, _playerVTableCount,
@@ -491,7 +526,9 @@ static bool MatchPrologue(const mach_header_64 *header, uintptr_t offset,
 - (NSString *)spawnEntityType:(NSInteger)type
                        variant:(NSInteger)variant
                        subtype:(NSInteger)subtype {
-    if (type < 2 || type > 1000) return @"Entity type must be between 2 and 1000.";
+    if (!((type >= 2 && type <= 9) || type == 1000)) {
+        return @"Supported entity types are 2 through 9 and 1000.";
+    }
     if (variant < 0 || variant > 9999) return @"Entity variant must be between 0 and 9999.";
     if (subtype < 0 || subtype > 9999) return @"Entity subtype must be between 0 and 9999.";
     NSString *error = [self validatePausedNativeAction];
@@ -503,7 +540,7 @@ static bool MatchPrologue(const mach_header_64 *header, uintptr_t offset,
         return @"Native spawn signature failed validation; spawning disabled.";
     }
     vm_address_t game = 0;
-    if (![self readGameAddress:&game]) return @"The active Game object is unavailable.";
+    if (![self readSpawnContextAddress:&game error:&error]) return error;
 
     NativeVector position{_lastSnapshot.playerX, _lastSnapshot.playerY};
     position.x += position.x < 320.0f ? 64.0f : -64.0f;
@@ -512,12 +549,12 @@ static bool MatchPrologue(const mach_header_64 *header, uintptr_t offset,
     if (!seed) seed = 1;
     using GameSpawn = void *(*)(void *, unsigned int, unsigned int,
                                 const NativeVector *, const NativeVector *, void *,
-                                unsigned int, unsigned int);
+                                unsigned int, unsigned int, unsigned int);
     GameSpawn function = reinterpret_cast<GameSpawn>(
         reinterpret_cast<uintptr_t>(_isaacHeader) + kGameSpawnOffset);
     void *entity = function(reinterpret_cast<void *>(game), (unsigned int)type,
                             (unsigned int)variant, &position, &velocity, nullptr,
-                            (unsigned int)subtype, seed);
+                            (unsigned int)subtype, seed, 0);
     if (!entity) return @"Isaac rejected the spawn request.";
     int32_t identity[3]{};
     if (!ReadMemory(reinterpret_cast<vm_address_t>(entity) + kEntityTypeOffset,
@@ -565,16 +602,16 @@ static bool MatchPrologue(const mach_header_64 *header, uintptr_t offset,
                                      sizeof(kUseActiveItemPrologue[0])]) {
         return @"Native active-item signature failed validation; rewind disabled.";
     }
-    using UseActiveItem = void (*)(void *, unsigned int, unsigned int,
-                                   unsigned int, unsigned int, bool);
+    using UseActiveItem = int32_t (*)(void *, int32_t, uint32_t, int32_t, int32_t);
     UseActiveItem function = reinterpret_cast<UseActiveItem>(
         reinterpret_cast<uintptr_t>(_isaacHeader) + kUseActiveItemOffset);
     vm_address_t player = _currentPlayer;
     _currentPlayer = 0;
     _lastSnapshot = nil;
-    function(reinterpret_cast<void *>(player), kGlowingHourglassCollectible,
-             0, 1, 0, true);
-    IDCLog(@"rewind requested through Glowing Hourglass native logic");
+    int32_t resultFlags = function(reinterpret_cast<void *>(player),
+                                   kGlowingHourglassCollectible, 0, -1, 0);
+    IDCLog(@"rewind requested through Glowing Hourglass native logic (result=%d)",
+           resultFlags);
     return nil;
 }
 

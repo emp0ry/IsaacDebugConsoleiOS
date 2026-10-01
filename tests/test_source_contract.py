@@ -13,8 +13,14 @@ assert "MatchPrologue" in native
 assert "Pause the run before using modifying commands" in native
 assert "kAddCollectibleOffset = 0x500588" in native
 assert "kRemoveCollectibleOffset = 0x5051e0" in native
-assert "kGameSpawnOffset = 0x131080" in native
-assert "kUseActiveItemOffset = 0x2ebe10" in native
+assert "kGameSpawnOffset = 0x88fcbc" in native
+assert "kGameEntityFactoryOffset = 0x1cf430" in native
+assert "readSpawnContextAddress" in native
+assert "factory == UINTPTR_MAX" in native
+assert "reinterpret_cast<void *>(game)" in native
+assert "(unsigned int)subtype, seed, 0" in native
+assert "kUseActiveItemOffset = 0x580a28" in native
+assert "kGlowingHourglassCollectible, 0, -1, 0" in native
 assert "kGameSpawnPrologue" in native and "kUseActiveItemPrologue" in native
 assert "giveitem" in engine and "remove" in engine
 for command in ("spawnitem", "spawntrinket", "spawncard", "spawnrune", "spawnpill", "rewind"):
