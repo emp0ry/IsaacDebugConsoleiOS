@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#120b24">
+    <meta name="description" content="A native touch-friendly debug console for The Binding of Isaac: Repentance on iOS. Live suggestions, item search, spawn commands, inventory tools, and native rewind.">
+    <meta name="author" content="emp0ry">
+    <meta name="application-name" content="Isaac Debug Console">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com; upgrade-insecure-requests;">
+    <title>Isaac Debug Console | Native In-game Console for iOS</title>
+    <link rel="canonical" href="https://emp0ry.github.io/IsaacDebugConsoleiOS/">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&amp;family=Sora:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Isaac Debug Console">
+    <meta property="og:title" content="Isaac Debug Console | Native In-game Console for iOS">
+    <meta property="og:description" content="A native touch-friendly debug console for The Binding of Isaac: Repentance on iOS. Live suggestions, item search, spawn commands, inventory tools, and native rewind.">
+    <meta property="og:url" content="https://emp0ry.github.io/IsaacDebugConsoleiOS/">
+    <meta property="og:image" content="https://emp0ry.github.io/IsaacDebugConsoleiOS/images/debug-console.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Isaac Debug Console | Native In-game Console for iOS">
+    <meta name="twitter:description" content="A native touch-friendly debug console for The Binding of Isaac: Repentance on iOS. Live suggestions, item search, spawn commands, inventory tools, and native rewind.">
+    <link rel="stylesheet" href="styles.css">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Isaac Debug Console","description":"A native touch-friendly debug console for The Binding of Isaac: Repentance on iOS. Live suggestions, item search, spawn commands, inventory tools, and native rewind.","operatingSystem":"iOS","applicationCategory":"UtilitiesApplication","url":"https://emp0ry.github.io/IsaacDebugConsoleiOS/","codeRepository":"https://github.com/emp0ry/IsaacDebugConsoleiOS","downloadUrl":"https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/latest","author":{"@type":"Person","name":"emp0ry","url":"https://github.com/emp0ry"},"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"license":"https://github.com/emp0ry/IsaacDebugConsoleiOS/blob/main/LICENSE"}</script>
+    <script defer src="script.js"></script>
+    <noscript><style>.reveal { opacity: 1; transform: none; } .nav-toggle { display: none !important; } body[data-page="home"] .site-nav { position: static; display: flex; flex-wrap: wrap; max-height: none; } .nav-shell { flex-wrap: wrap; padding-block: 0.8rem; }</style></noscript>
+  </head>
+  <body data-page="home" data-repository="emp0ry/IsaacDebugConsoleiOS">
+    <div class="backdrop" aria-hidden="true"></div>
+    <header class="site-header">
+      <div class="container nav-shell">
+        <a class="brand" href="#top" aria-label="Isaac Debug Console home">
+          <span class="brand-copy"><strong>Isaac Console</strong></span>
+        </a>
+        <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">
+          <span></span><span></span><span></span>
+        </button>
+        <nav class="site-nav" id="site-nav" aria-label="Primary">
+          <a href="#downloads">Download</a>
+          <a href="#features">Features</a>
+          <a href="#usage">Usage</a>
+          <a href="#requirements">Requirements</a>
+          <a class="button button-ghost" href="https://github.com/emp0ry/IsaacDebugConsoleiOS" target="_blank" rel="noreferrer">GitHub</a>
+          <a class="button button-secondary button-accent" href="https://emp0ry.com" target="_blank" rel="noreferrer">Hub</a>
+        </nav>
+      </div>
+    </header>
+    <main>
+      <section class="hero section" id="top">
+        <div class="container">
+          <div class="hero-copy is-centered reveal">
+            <div class="eyebrow"><span class="eyebrow-dot" aria-hidden="true"></span>Repentance on iOS · Native console · Touch-friendly</div>
+            <h1>Pause the run.<br>Take control.</h1>
+            <p class="hero-text">A native in-game debug console for The Binding of Isaac on iOS. Search the item catalog, inspect your run, spawn pickups, change inventory, and use Isaac’s own rewind effect through a touch-friendly interface.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#downloads">Download Latest</a>
+              <a class="button button-secondary" href="https://github.com/emp0ry/IsaacDebugConsoleiOS" target="_blank" rel="noreferrer">View Source</a>
+              <a class="button button-secondary" href="#features">Explore features</a>
+            </div>
+            <div class="hero-metrics">
+              <div class="metric-card"><strong>Live suggestions</strong><span>Search commands and game catalogs as you type</span></div>
+              <div class="metric-card"><strong>Native commands</strong><span>Inventory, pickups, entities, and Glowing Hourglass</span></div>
+              <div class="metric-card"><strong>3 ways to install</strong><span>Rootless, LiveContainer, or app-bundle embedding</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="section downloads" id="downloads">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-kicker">Downloads</span>
+            <h2>Choose your installation.</h2>
+            <p>Get the latest release for your setup. Download buttons follow the newest GitHub release as updates are published.</p>
+          </div>
+          <p class="download-status" data-release-status role="status">Latest release available on GitHub</p>
+          <div class="download-grid">
+            <article class="download-card reveal">
+              <div class="download-card-head"><span class="download-platform">Rootless</span><span class="download-format">DEB</span></div>
+              <h3>Jailbroken devices</h3>
+              <p>ElleKit package filtered to Isaac’s bundle identifier. Install, then restart the game.</p>
+              <a class="button button-secondary download-button" href="https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/latest/download/IsaacDebugConsole-rootless.deb" target="_blank" rel="noreferrer" data-asset="IsaacDebugConsole-rootless.deb">Download</a>
+            </article>
+            <article class="download-card reveal reveal-delay-sm">
+              <div class="download-card-head"><span class="download-platform">LiveContainer</span><span class="download-format">ZIP</span></div>
+              <h3>Private app framework</h3>
+              <p>Import the framework into an app-specific tweak folder assigned to Isaac.</p>
+              <a class="button button-secondary download-button" href="https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/latest/download/IsaacDebugConsole-LiveContainer.framework.zip" target="_blank" rel="noreferrer" data-asset="IsaacDebugConsole-LiveContainer.framework.zip">Download</a>
+            </article>
+            <article class="download-card reveal reveal-delay-md">
+              <div class="download-card-head"><span class="download-platform">Embedded</span><span class="download-format">ZIP</span></div>
+              <h3>App-bundle package</h3>
+              <p>Dylib package for direct embedding into your own modified and re-signed app.</p>
+              <a class="button button-secondary download-button" href="https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/latest/download/IsaacDebugConsole-Embedded.zip" target="_blank" rel="noreferrer" data-asset="IsaacDebugConsole-Embedded.zip">Download</a>
+            </article>
+            <article class="download-card reveal">
+              <div class="download-card-head"><span class="download-platform">Full build</span><span class="download-format">ZIP</span></div>
+              <h3>Every format together</h3>
+              <p>All public formats, documentation, and checksums for advanced installation.</p>
+              <a class="button button-secondary download-button" href="https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/latest/download/IsaacDebugConsole-Full-Build.zip" target="_blank" rel="noreferrer" data-asset="IsaacDebugConsole-Full-Build.zip">Download</a>
+            </article>
+          </div>
+          <p class="release-note">The core uses Apple system frameworks. ElleKit is required only for the optional jailbreak loader. <a class="inline-link" href="https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/latest" target="_blank" rel="noreferrer" data-release-link>All release files and notes</a>.</p>
+
+        </div>
+      </section>
+
+      <section class="section screenshots" id="preview">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-kicker">In the game</span>
+            <h2>A real console. Inside the real game.</h2>
+            <p>Touch input, live suggestions, and command output inside Isaac.</p>
+          </div>
+          <figure class="screenshot-card reveal">
+            <img class="screenshot-image" src="images/debug-console.png" alt="Isaac Debug Console open over native iOS gameplay with command input and suggestions" width="2868" height="1320" loading="lazy" decoding="async">
+            <figcaption class="screenshot-caption"><strong>Real in-game console</strong><span>Touch input, live suggestions, and command output inside Isaac.</span></figcaption>
+          </figure>
+        </div>
+      </section>
+      <section class="section" id="features">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-kicker">Features</span>
+            <h2>A console that feels at home on iPhone.</h2>
+            <p>Pause an active run to open the console. Its UIKit overlay sits in Isaac’s existing window, while touches outside it continue to reach the game.</p>
+          </div>
+          <div class="feature-grid">
+            <article class="feature-card reveal">
+              <div class="feature-icon icon-orbit" aria-hidden="true"></div>
+              <h3>Live autocomplete</h3>
+              <p>Tap command and catalog suggestions to complete input. Execute with <strong>Run</strong> or the keyboard’s Return key.</p>
+            </article>
+            <article class="feature-card reveal reveal-delay-sm">
+              <div class="feature-icon icon-sun" aria-hidden="true"></div>
+              <h3>Inspect the current run</h3>
+              <p>Read the current seed, room type, player position, inventory, executable status, and native bridge status.</p>
+            </article>
+            <article class="feature-card reveal reveal-delay-md">
+              <div class="feature-icon icon-grid" aria-hidden="true"></div>
+              <h3>Search game catalogs</h3>
+              <p>Find collectibles, trinkets, cards, runes, Soul Stones, and pill effects by name or ID, using the installed game’s catalogs.</p>
+            </article>
+            <article class="feature-card reveal">
+              <div class="feature-icon icon-play" aria-hidden="true"></div>
+              <h3>Spawn and inventory tools</h3>
+              <p>Give or remove collectibles, spawn item pedestals and pickups, or create supported native entities beside the player.</p>
+            </article>
+            <article class="feature-card reveal reveal-delay-sm">
+              <div class="feature-icon icon-wave" aria-hidden="true"></div>
+              <h3>Native rewind</h3>
+              <p>Use <code>rewind</code> to trigger Isaac’s real Glowing Hourglass effect. Session history and scrollable output keep commands easy to revisit.</p>
+            </article>
+            <article class="feature-card reveal reveal-delay-md">
+              <div class="feature-icon icon-lock" aria-hidden="true"></div>
+              <h3>Validated native calls</h3>
+              <p>Modifying commands require a paused active run and validated game functions. Unsupported executables leave those commands disabled.</p>
+            </article>
+          </div>
+          <div class="command-cloud reveal" aria-label="Example console commands"><code class="command-chip">help</code><code class="command-chip">status</code><code class="command-chip">seed</code><code class="command-chip">room</code><code class="command-chip">inventory</code><code class="command-chip">spawnitem sacred heart</code><code class="command-chip">spawnrune jera</code><code class="command-chip">spawnpill 7 horse</code><code class="command-chip">rewind</code></div>
+        </div>
+      </section>
+
+      <section class="section experience" id="usage">
+        <div class="container split-layout">
+          <div class="section-head reveal">
+            <span class="section-kicker">Usage</span>
+            <h2>Pause. Open. Run a command.</h2>
+            <p>The Console button appears in the lower-left corner during a paused active run. It hides during gameplay and outside a run.</p>
+            <div class="hero-actions"><a class="button button-secondary button-accent" href="https://github.com/emp0ry/IsaacDebugConsoleiOS/blob/main/docs/INSTALL.md" target="_blank" rel="noreferrer">Read installation guide</a></div>
+          </div>
+          <div class="steps-card reveal reveal-delay">
+            <article class="step-row">
+              <span class="step-index">01</span><div><h3>Install the matching build</h3><p>Choose the rootless DEB, LiveContainer private-app framework, or embedded package. Restart Isaac after installation.</p></div>
+            </article>
+            <article class="step-row">
+              <span class="step-index">02</span><div><h3>Check the bridge</h3><p>Pause a run, tap <strong>Console</strong>, and run <code>status</code>. Use <code>help</code> to list commands or <code>help spawnitem</code> for detailed usage.</p></div>
+            </article>
+            <article class="step-row">
+              <span class="step-index">03</span><div><h3>Explore your run</h3><p>Try <code>items sacred heart</code>, <code>inventory</code>, or <code>seed</code>. Use autocomplete and session history to keep typing to a minimum.</p></div>
+            </article>
+          </div>
+        </div>
+      </section>
+      <section class="section responsibility" id="requirements">
+        <div class="container">
+          <div class="responsibility-shell reveal">
+            <div class="section-head">
+              <span class="section-kicker">Requirements & credits</span>
+              <h2>Verified for the supported game build.</h2>
+              <p>Debug commands change the current run and may affect saved progress. Back up application data before experimenting.</p>
+            </div>
+            <div class="legal-grid">
+              <article class="legal-card"><h3>Supported game</h3><p>ARM64 App Store version 1.4, Repentance v1.7.9b.J754, bundle identifier <code>com.Nicalis.Isaac-iOS</code>.</p></article>
+              <article class="legal-card"><h3>iOS 15 or newer</h3><p>The core supports rootless injection, LiveContainer private apps, and direct app-bundle embedding.</p></article>
+              <article class="legal-card"><h3>Paused-run requirement</h3><p>Native modifications run only after executable, player, function, and game-state checks pass.</p></article>
+              <article class="legal-card"><h3>Rewind behavior</h3><p>Glowing Hourglass follows the game’s own rewind path. It cannot undo arbitrary console changes.</p></article>
+            </div>
+            <p class="release-note">An unofficial project, unaffiliated with REPENTOGON, Nicalis, Apple, or Valve. No game application, DLC, or purchase bypass is included.</p>
+            <div class="responsibility-actions">
+              <a class="button button-secondary button-accent" href="https://github.com/emp0ry/IsaacDebugConsoleiOS" target="_blank" rel="noreferrer">View on GitHub</a>
+              <a class="button button-secondary" href="https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/latest" target="_blank" rel="noreferrer" data-release-link>Releases</a>
+              <a class="button button-secondary" href="https://emp0ry.com" target="_blank" rel="noreferrer">Back to Hub</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <a class="brand brand-footer" href="#top">
+            <span class="brand-copy"><strong>Isaac Console</strong></span>
+          </a>
+          <p class="footer-copy">A native touch-friendly debug console for The Binding of Isaac: Repentance on iOS.</p>
+        </div>
+        <div class="footer-links">
+          <a href="https://emp0ry.com">Hub</a>
+          <a href="https://github.com/emp0ry/IsaacDebugConsoleiOS" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/latest" target="_blank" rel="noreferrer" data-release-link>Releases</a>
+
+        </div>
+        <div class="footer-credits">
+          <p>Built and published by emp0ry.</p>
+          <p>MIT licensed · Inspired by the desktop console experience and REPENTOGON.</p>
+          <p>&copy; <span data-year>2026</span> Isaac Console</p>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
