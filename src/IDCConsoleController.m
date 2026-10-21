@@ -2,6 +2,7 @@
 #import "IDCCommandEngine.h"
 #import "IDCLogger.h"
 #import "IDCNativeBridge.h"
+#import "IDCHotkey.h"
 
 #import <UIKit/UIKit.h>
 
@@ -43,6 +44,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 @property(nonatomic) NSInteger historyIndex;
 @property(nonatomic) CGFloat keyboardOverlap;
 @property(nonatomic) BOOL keyboardVisible;
+@property(nonatomic, strong) IDCHotkey *hotkey;
 @end
 
 @implementation IDCConsoleController
@@ -71,6 +73,11 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
         [center addObserver:self selector:@selector(keyboardWillHide:)
                        name:UIKeyboardWillHideNotification object:nil];
         [self attachIfNeeded];
+        __weak IDCConsoleController *weakSelf = self;
+        self.hotkey = [[IDCHotkey alloc] initWithHandler:^BOOL {
+            return [weakSelf toggleFromKeyboard];
+        }];
+        [self.hotkey start];
         self.timer = [NSTimer scheduledTimerWithTimeInterval:0.25 target:self
                                                     selector:@selector(tick:)
                                                     userInfo:nil repeats:YES];
@@ -159,7 +166,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     output.selectable = YES;
     output.layer.cornerRadius = 6;
     output.textContainerInset = UIEdgeInsetsMake(7, 8, 7, 8);
-    output.text = @"Isaac Debug Console iOS 0.3.0\nType help for every command. Suggestions update while you type.\n";
+    output.text = @"Isaac Debug Console iOS 0.3.1\nType help for every command. Suggestions update while you type.\nPause the run, then press ` to toggle the console.\n";
     [panel addSubview:output];
 
     UITableView *suggestionsTable = [[UITableView alloc] initWithFrame:CGRectZero
@@ -284,6 +291,9 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 
 - (void)toggleConsole:(UIButton *)sender {
     (void)sender;
+    IDCNativeSnapshot *snapshot = [self.bridge refreshSnapshot];
+    if (!snapshot.supportedBuild || !snapshot.inGame ||
+        !snapshot.pauseStateAvailable || !snapshot.paused) return;
     if (self.panel.hidden) {
         self.panel.hidden = NO;
         [self.rootView bringSubviewToFront:self.panel];
@@ -292,6 +302,26 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     } else {
         [self closeConsole:nil];
     }
+}
+
+- (BOOL)hasOtherTextInput:(UIView *)view {
+    if (view.isFirstResponder && view != self.inputField &&
+        [view conformsToProtocol:@protocol(UITextInput)]) return YES;
+    for (UIView *child in view.subviews) {
+        if ([self hasOtherTextInput:child]) return YES;
+    }
+    return NO;
+}
+
+- (BOOL)toggleFromKeyboard {
+    [self attachIfNeeded];
+    if (!self.panel || [self hasOtherTextInput:[self gameWindow]]) return NO;
+    if (!self.panel.hidden) {
+        [self closeConsole:nil];
+        return YES;
+    }
+    [self toggleConsole:nil];
+    return !self.panel.hidden;
 }
 
 - (void)closeConsole:(UIButton *)sender {

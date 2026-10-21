@@ -7,6 +7,7 @@ engine = (ROOT / "src/IDCCommandEngine.m").read_text()
 controller = (ROOT / "src/IDCConsoleController.m").read_text()
 catalog = (ROOT / "src/IDCItemCatalog.m").read_text()
 bootstrap = (ROOT / "src/IDCBootstrap.m").read_text()
+hotkey = (ROOT / "src/IDCHotkey.m").read_text()
 
 assert "F4357753-A25F-30EE-BACF-63709F902895" in native
 assert "MatchPrologue" in native
@@ -33,6 +34,16 @@ assert "toggleKeyboard:" in controller
 assert "colorWithWhite:0 alpha:0.78" in controller
 assert "windowLevel" not in controller or "UIWindowLevelNormal" in controller
 assert "com.Nicalis.Isaac-iOS" in bootstrap
+assert "UIKeyboardHIDUsageKeyboardGraveAccentAndTilde" in hotkey
+assert "UIPressesEvent" in hotkey
+assert "addLocalMonitorForEventsMatchingMask:" in hotkey
+assert "isARepeat" in hotkey and "keyHeld" in hotkey
+assert "gOriginalSendEvent(application, selector, event)" in hotkey
+assert "hasOtherTextInput:" in controller and "toggleFromKeyboard" in controller
+assert "snapshot.pauseStateAvailable || !snapshot.paused" in controller
+assert "0.3.1" in engine and "0.3.1" in controller
+notes = (ROOT / "docs/RELEASE_NOTES_v0.3.1.md").read_text()
+assert not notes.startswith("# ")
 
 for forbidden in ("MobileSubstrate", "substrate.h", "ElleKit", "/var/jb"):
     assert forbidden not in "\n".join((native, engine, controller, catalog, bootstrap))

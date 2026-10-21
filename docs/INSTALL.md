@@ -47,6 +47,21 @@ decrypted app bundle:
 The project does not provide or download Isaac. It does not modify StoreKit, receipts, DLC
 ownership, or purchase checks.
 
+## PlayCover on Apple Silicon
+
+PlayCover converts Isaac to Mac Catalyst. A raw iOS dylib cannot be loaded unchanged into that
+host. Convert a copy of the mod with `vtool`, embed it in the app's `Frameworks` directory,
+add the normal load command above, and re-sign while preserving the app's existing entitlements:
+
+```sh
+xcrun vtool -set-build-version maccatalyst 15.0 15.0 -replace \
+  -output IsaacDebugConsole-Catalyst.dylib IsaacDebugConsole.dylib
+```
+
+Do not replace PlayTools or change Isaac's executable UUID. Keep an executable/signature backup
+before installation. The ordinary release dylib remains an iOS build for iPhone and LiveContainer.
+After launch, pause the run and press the physical **grave/backtick (`)** key to toggle the console.
+
 ## Signing notes
 
 - The dylib is ordinary ARM64 code and does not use JIT or unsigned executable memory.

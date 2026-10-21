@@ -27,7 +27,14 @@ game executable, save data, DLC, or copyrighted game database is distributed.
 ## Interface
 
 Pause an active run and a **Console** button appears in the lower-left corner. It automatically
-hides during gameplay and outside a run. The overlay contains:
+hides during gameplay and outside a run.
+
+With a hardware keyboard, pause the run and press the **grave/backtick key (`)** to open or
+close the console. This also supports PlayCover's Mac Catalyst host. Hold-to-repeat is ignored;
+the shortcut does not insert a backtick into the command field or intercept Steam login fields.
+The run must already be paused, just as when using the touch button.
+
+The overlay contains:
 
 - Live command and catalog suggestions
 - Tap-to-complete results

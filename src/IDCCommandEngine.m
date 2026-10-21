@@ -2,7 +2,7 @@
 #import "IDCItemCatalog.h"
 #import "IDCNativeBridge.h"
 
-static NSString *const IDCVersion = @"0.3.0";
+static NSString *const IDCVersion = @"0.3.1";
 
 @implementation IDCCommandResult
 @end

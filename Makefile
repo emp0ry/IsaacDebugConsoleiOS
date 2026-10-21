@@ -23,6 +23,7 @@ SOURCES := \
 	$(PROJECT_ROOT)/src/IDCItemCatalog.m \
 	$(PROJECT_ROOT)/src/IDCCommandEngine.m \
 	$(PROJECT_ROOT)/src/IDCConsoleController.m \
+	$(PROJECT_ROOT)/src/IDCHotkey.m \
 	$(PROJECT_ROOT)/src/IDCNativeBridge.mm
 
 .PHONY: all dylib package livecontainer embedded audit test release clean
@@ -80,7 +81,7 @@ audit: dylib
 	else echo "Portable dependency audit passed"; fi
 
 test:
-	python3 "$(PROJECT_ROOT)/tests/test_source_contract.py"
+	python3 "$(PROJECT_ROOT)/tools/check-source.py"
 	plutil -lint "$(PROJECT_ROOT)/livecontainer/Info.plist"
 	plutil -lint "$(PROJECT_ROOT)/package/IsaacDebugConsole.plist"
 
