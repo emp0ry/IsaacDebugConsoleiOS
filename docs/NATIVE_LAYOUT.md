@@ -19,6 +19,9 @@ Verified runtime values:
 - `Entity_Player::AddCollectible` RVA: `0x500588`
 - `Entity_Player::RemoveCollectible` RVA: `0x5051E0`
 - `Entity_Player::UseActiveItem` RVA: `0x580A28`
+- manager singleton pointer RVA: `0xAC2428`
+- native fresh-run queue RVA: `0x672568`
+- Seeds copy constructor / destructor RVAs: `0x56FC54` / `0x56FCD4`
 
 Every native function entry point is checked against its expected ARM64 prologue before each
 mutation. Room entities are created through the current Repentance `Game::Spawn` path with the
@@ -28,3 +31,9 @@ path with collectible 422 (Glowing Hourglass), use flags `0`, active slot `-1`, 
 custom data `0`. The player pointer is resolved by
 RTTI/vtable validation instead of assuming a fixed player-vector offset. Unsupported executables
 retain the UI and diagnostic status, but mutation remains disabled.
+
+Restart follows the native hold-restart completion branch (fade mode 5),
+including native counter updates and an owning 0x70-byte Seeds copy. It queues
+the transition for Manager::Update instead of destroying the Game from a UIKit
+callback. The command accepts only the normal paused-run state, validates all
+called signatures, and rejects a pending transition or unsupported context.

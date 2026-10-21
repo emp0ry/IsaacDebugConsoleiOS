@@ -60,6 +60,7 @@ jobs:
           set -euo pipefail
           required=(
             dist/IsaacDebugConsole.dylib
+            dist/IsaacDebugConsole-PlayCover.dylib
             dist/IsaacDebugConsole-rootless.deb
             dist/IsaacDebugConsole-LiveContainer.framework.zip
             dist/IsaacDebugConsole-Embedded.zip
@@ -67,6 +68,8 @@ jobs:
             dist/SHA256SUMS
           )
           for file in "${required[@]}"; do test -s "$file"; done
+          (cd dist && shasum -a 256 -c SHA256SUMS)
+          codesign --verify --strict dist/IsaacDebugConsole-PlayCover.dylib
           unzip -l dist/IsaacDebugConsole-LiveContainer.framework.zip > "$RUNNER_TEMP/livecontainer-files.txt"
           unzip -l dist/IsaacDebugConsole-Embedded.zip > "$RUNNER_TEMP/embedded-files.txt"
           dpkg-deb -c dist/IsaacDebugConsole-rootless.deb > "$RUNNER_TEMP/deb-files.txt"
@@ -80,6 +83,7 @@ jobs:
           name: IsaacDebugConsole-v${{ steps.version.outputs.version }}
           path: |
             dist/IsaacDebugConsole.dylib
+            dist/IsaacDebugConsole-PlayCover.dylib
             dist/IsaacDebugConsole-rootless.deb
             dist/IsaacDebugConsole-LiveContainer.framework.zip
             dist/IsaacDebugConsole-Embedded.zip
@@ -103,6 +107,7 @@ jobs:
             --notes-file "docs/RELEASE_NOTES_v${VERSION}.md" \
             --latest \
             dist/IsaacDebugConsole.dylib \
+            dist/IsaacDebugConsole-PlayCover.dylib \
             dist/IsaacDebugConsole-rootless.deb \
             dist/IsaacDebugConsole-LiveContainer.framework.zip \
             dist/IsaacDebugConsole-Embedded.zip \

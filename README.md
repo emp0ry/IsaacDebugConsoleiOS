@@ -20,6 +20,7 @@ Download the current build from [GitHub Releases](https://github.com/emp0ry/Isaa
 | LiveContainer private app | `IsaacDebugConsole-LiveContainer.framework.zip` |
 | Embedded/non-jailbroken app | `IsaacDebugConsole-Embedded.zip` |
 | Advanced/manual setup | `IsaacDebugConsole-Full-Build.zip` |
+| iOS game in PlayCover | `IsaacDebugConsole-PlayCover.dylib` |
 
 A standalone `IsaacDebugConsole.dylib` and `SHA256SUMS` are also included. No Isaac IPA,
 game executable, save data, DLC, or copyrighted game database is distributed.
@@ -71,6 +72,7 @@ Touches outside the console continue to reach the game.
 | `spawnrune <ID\|1-10\|name>` / `sr` | Spawn a rune or Soul Stone |
 | `spawnpill <color\|effect> [horse]` / `sp` | Spawn a normal or horse pill |
 | `rewind` / `hourglass` | Run Isaac's native Glowing Hourglass rewind effect |
+| `restart` / `rs` | Queue one fresh run with the same character and difficulty, then close Console |
 | `history`, `clear`, `version`, `close` | Console utilities |
 
 Examples:
@@ -84,6 +86,7 @@ spawnpill effect 2
 spawnpill 7 horse
 spawn 5.100.1
 rewind
+rs
 ```
 
 Catalog names are read at runtime from the XML files inside the installed game. Pill effects are
@@ -153,6 +156,12 @@ limited to entity types 2 through 9 and 1000.
 Debug commands still change the current run and may affect saved progress. `rewind` uses the real
 Glowing Hourglass path; it is not an undo system for arbitrary console commands. Unknown or invalid
 game-level type/variant combinations may be rejected by Isaac or behave unexpectedly.
+
+`restart` and `rs` intentionally replace the current run. They use the native
+fresh-run queue, not collectible R Key, and do not keep acquired items. Native
+seed and Eden-token restrictions apply. No arguments are accepted. The commands
+work independently of Isaac Drop. For PlayCover use the separately signed Mac
+Catalyst library, preserving the app's existing load path and entitlements.
 
 ## Build from source
 

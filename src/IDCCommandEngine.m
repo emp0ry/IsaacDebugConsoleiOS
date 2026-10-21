@@ -2,7 +2,7 @@
 #import "IDCItemCatalog.h"
 #import "IDCNativeBridge.h"
 
-static NSString *const IDCVersion = @"0.3.1";
+static NSString *const IDCVersion = @"0.3.2";
 
 @implementation IDCCommandResult
 @end
@@ -76,6 +76,8 @@ static NSString *const IDCVersion = @"0.3.1";
                @"summary": @"Spawn a pill from this run's pill pool" },
             @{ @"name": @"rewind", @"aliases": @[@"hourglass"], @"usage": @"rewind",
                @"summary": @"Rewind through Isaac's Glowing Hourglass logic" },
+            @{ @"name": @"restart", @"aliases": @[@"rs"], @"usage": @"restart",
+               @"summary": @"Start a fresh run with the same character and difficulty (alias: rs)" },
             @{ @"name": @"history", @"aliases": @[], @"usage": @"history",
                @"summary": @"Print commands used in this session" },
             @{ @"name": @"clear", @"aliases": @[@"cls"], @"usage": @"clear",
@@ -412,6 +414,12 @@ static NSString *const IDCVersion = @"0.3.1";
         NSString *error = [self.bridge rewind];
         return [self nativeResultForError:error
                                   success:@"Rewind triggered through Glowing Hourglass logic."];
+    }
+    if ([command isEqualToString:@"restart"]) {
+        if (argument.length) return [self result:@"Usage: restart (alias: rs)" action:IDCCommandActionNone];
+        NSString *error = [self.bridge restart];
+        if (error) return [self nativeResultForError:error success:@""];
+        return [self result:@"Native fresh-run restart queued." action:IDCCommandActionClose];
     }
     return [self result:@"Command is not implemented." action:IDCCommandActionNone];
 }

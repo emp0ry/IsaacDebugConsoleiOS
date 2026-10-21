@@ -30,6 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
                                   horse:(BOOL)horse
                           resolvedColor:(NSInteger * _Nullable)resolvedColor;
 - (nullable NSString *)rewind;
+- (nullable NSString *)restart;
 @end
 
 NS_ASSUME_NONNULL_END

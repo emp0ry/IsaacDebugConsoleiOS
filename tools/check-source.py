@@ -24,7 +24,7 @@ assert "kUseActiveItemOffset = 0x580a28" in native
 assert "kGlowingHourglassCollectible, 0, -1, 0" in native
 assert "kGameSpawnPrologue" in native and "kUseActiveItemPrologue" in native
 assert "giveitem" in engine and "remove" in engine
-for command in ("spawnitem", "spawntrinket", "spawncard", "spawnrune", "spawnpill", "rewind"):
+for command in ("spawnitem", "spawntrinket", "spawncard", "spawnrune", "spawnpill", "rewind", "restart"):
     assert command in engine
 assert "pocketitems.xml" in catalog
 assert "pilleffect" in catalog and '? @"pill"' in catalog
@@ -41,8 +41,11 @@ assert "isARepeat" in hotkey and "keyHeld" in hotkey
 assert "gOriginalSendEvent(application, selector, event)" in hotkey
 assert "hasOtherTextInput:" in controller and "toggleFromKeyboard" in controller
 assert "snapshot.pauseStateAvailable || !snapshot.paused" in controller
-assert "0.3.1" in engine and "0.3.1" in controller
-notes = (ROOT / "docs/RELEASE_NOTES_v0.3.1.md").read_text()
+assert '@"aliases": @[@"rs"]' in engine
+assert "RestartSignaturesMatch" in native and "image+0x672568" in native
+assert "WritableMemory" in native and "pending ||" in native
+assert "0.3.2" in engine and "0.3.2" in controller
+notes = (ROOT / "docs/RELEASE_NOTES_v0.3.2.md").read_text()
 assert not notes.startswith("# ")
 
 for forbidden in ("MobileSubstrate", "substrate.h", "ElleKit", "/var/jb"):

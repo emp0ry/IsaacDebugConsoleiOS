@@ -267,6 +267,38 @@ static bool MatchPrologue(const mach_header_64 *header, uintptr_t offset,
             count * sizeof(uint32_t))) return false;
     return memcmp(actual.data(), expected, count * sizeof(uint32_t)) == 0;
 }
+
+static bool WritableMemory(uintptr_t address, size_t length) {
+    vm_address_t region = address; vm_size_t size = 0;
+    vm_region_basic_info_data_64_t info{};
+    mach_msg_type_number_t count = VM_REGION_BASIC_INFO_COUNT_64;
+    mach_port_t object = MACH_PORT_NULL;
+    kern_return_t result = vm_region_64(mach_task_self(), &region, &size, VM_REGION_BASIC_INFO_64,
+        reinterpret_cast<vm_region_info_t>(&info), &count, &object);
+    if (object != MACH_PORT_NULL) mach_port_deallocate(mach_task_self(), object);
+    return result == KERN_SUCCESS && region <= address && address-region < size &&
+        length <= size-(address-region) && (info.protection & (VM_PROT_READ|VM_PROT_WRITE)) ==
+        (VM_PROT_READ|VM_PROT_WRITE) && !(info.protection & VM_PROT_EXECUTE);
+}
+
+static bool RestartSignaturesMatch(const mach_header_64 *header) {
+    // Native hold-restart fade mode 5, its queue and the owning Seeds lifetime.
+    struct Signature { uintptr_t offset; std::array<uint32_t,4> words; };
+    const Signature signatures[] = {
+        {0x88ddb0,{0x91409688,0x91310100,0x52800001,0x97f131ee}},
+        {0x88de30,{0xaa1503e0,0x52800002,0x52800023,0x97f791cb}},
+        {0x672568,{0xd10283ff,0xa90757f6,0xa9084ff4,0xa9097bfd}},
+        {0x56fc54,{0x17ffffcd,0xa9be4ff4,0xa9017bfd,0x910043fd}},
+        {0x56fb88,{0xa9bc5ff8,0xa90157f6,0xa9024ff4,0xa9037bfd}},
+        {0x56fcd4,{0xa9be4ff4,0xa9017bfd,0x910043fd,0xaa0003f3}},
+        {0x701e28,{0xa9ba6ffc,0xa90167fa,0xa9025ff8,0xa90357f6}},
+        {0x572488,{0xaa0103e8,0x52800001,0x35000088,0x39400008}},
+        {0x67155c,{0x2940db15,0x9147da68,0x912d4101,0x910023e0}},
+    };
+    for (const auto& signature : signatures)
+        if (!MatchPrologue(header,signature.offset,signature.words.data(),4)) return false;
+    return true;
+}
 }  // namespace
 
 @implementation IDCNativeSnapshot
@@ -612,6 +644,47 @@ static bool MatchPrologue(const mach_header_64 *header, uintptr_t offset,
                                    kGlowingHourglassCollectible, 0, -1, 0);
     IDCLog(@"rewind requested through Glowing Hourglass native logic (result=%d)",
            resultFlags);
+    return nil;
+}
+
+- (NSString *)restart {
+    if (!NSThread.isMainThread) return @"Restart must run on the game's main thread.";
+    NSString *error = [self validatePausedNativeAction];
+    if (error) return error;
+    if (!RestartSignaturesMatch(_isaacHeader)) return @"Native restart signature failed validation.";
+    uintptr_t image = reinterpret_cast<uintptr_t>(_isaacHeader), manager = 0;
+    vm_address_t game = 0;
+    int32_t pause = -1, counter = -1, tokens = 0;
+    uint32_t state = 0, character = UINT32_MAX, restriction = 1;
+    uint8_t pending = 1; float fade = 1;
+    if (![self readGameAddress:&game] ||
+        !ReadMemory(image+0xac2428,&manager,8) || !manager ||
+        !ReadMemory(manager+0x204c0,&state,4) || state != 2 ||
+        !ReadMemory(manager+0x1f6b40,&pending,1) || pending ||
+        !ReadMemory(game+kGamePauseStateOffset,&pause,4) || pause != 1 ||
+        !ReadMemory(game+0x1cf444,&fade,4) || !std::isfinite(fade) || fade != 0 ||
+        !ReadMemory(game+0x1cf4c0,&restriction,4) || restriction ||
+        !ReadMemory(_currentPlayer+0x1738,&character,4) || character > 40 ||
+        !ReadMemory(manager+0x207d0,&counter,4) || counter < 0 ||
+        !ReadMemory(manager+0x207cc,&tokens,4) ||
+        !WritableMemory(manager,0x1f6cf0) || !WritableMemory(game+0x25d40,0x70)) {
+        return @"Restart is unavailable during menus, transitions or a restricted run.";
+    }
+    if ((character == 9 || character == 30) && tokens <= 0)
+        return @"The native restart path requires an Eden token.";
+    using CopySeeds = void (*)(void *,const void *);
+    using DestroySeeds = void (*)(void *);
+    using AddCounter = void (*)(void *,uint32_t,int32_t);
+    using QueueRestart = void (*)(void *,const void *,int,int);
+    alignas(16) std::array<uint8_t,0x70> seeds{};
+    reinterpret_cast<CopySeeds>(image+0x56fc54)(seeds.data(),reinterpret_cast<void *>(game+0x25d40));
+    auto add = reinterpret_cast<AddCounter>(image+0x701e28);
+    add(reinterpret_cast<void *>(manager+0x204d0),22,-counter);
+    if (character == 9 || character == 30) add(reinterpret_cast<void *>(manager+0x204d0),21,-1);
+    reinterpret_cast<QueueRestart>(image+0x672568)(reinterpret_cast<void *>(manager),seeds.data(),0,1);
+    reinterpret_cast<DestroySeeds>(image+0x56fcd4)(seeds.data());
+    _currentPlayer = 0; _lastSnapshot = nil;
+    IDCLog(@"native fresh-run restart queued by console; character/difficulty retained");
     return nil;
 }
 

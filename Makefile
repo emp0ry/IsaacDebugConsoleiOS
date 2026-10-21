@@ -3,11 +3,13 @@ SHELL := /bin/zsh
 PROJECT_ROOT := $(CURDIR)
 VERSION := $(shell awk '/^Version:/ { print $$2 }' $(PROJECT_ROOT)/package/control)
 SDK := $(shell xcrun --sdk iphoneos --show-sdk-path)
+MACSDK := $(shell xcrun --sdk macosx --show-sdk-path)
 CLANG := $(shell xcrun --sdk iphoneos --find clang)
 MIN_IOS ?= 15.0
 EXTRA_CFLAGS ?=
 
 DYLIB := $(PROJECT_ROOT)/build/IsaacDebugConsole.dylib
+PLAYCOVER_DYLIB := $(PROJECT_ROOT)/build/IsaacDebugConsole-PlayCover.dylib
 DEB_STAGE := $(PROJECT_ROOT)/package/stage
 DEB := $(PROJECT_ROOT)/packages/IsaacDebugConsole-rootless.deb
 LC_FRAMEWORK := $(PROJECT_ROOT)/build/IsaacDebugConsole.framework
@@ -26,7 +28,7 @@ SOURCES := \
 	$(PROJECT_ROOT)/src/IDCHotkey.m \
 	$(PROJECT_ROOT)/src/IDCNativeBridge.mm
 
-.PHONY: all dylib package livecontainer embedded audit test release clean
+.PHONY: all dylib package livecontainer embedded playcover audit test release clean
 
 all: dylib package
 
@@ -80,7 +82,17 @@ audit: dylib
 		echo "ERROR: jailbreak-only dependency detected"; exit 1; \
 	else echo "Portable dependency audit passed"; fi
 
+playcover: dylib
+	xcrun vtool -set-build-version maccatalyst 15.0 15.0 -replace -output "$(PLAYCOVER_DYLIB)" "$(DYLIB)"
+	codesign --force --sign - --timestamp=none --identifier com.emp0ry.isaacdebugconsole.dylib "$(PLAYCOVER_DYLIB)"
+	codesign --verify --strict "$(PLAYCOVER_DYLIB)"
+
 test:
+	mkdir -p build
+	xcrun --sdk macosx clang -isysroot "$(MACSDK)" -fobjc-arc -fblocks -Wall -Wextra -Werror \
+		-Iinclude src/IDCCommandEngine.m src/IDCItemCatalog.m tools/check_commands.m \
+		-framework Foundation -o build/check_commands
+	build/check_commands
 	python3 "$(PROJECT_ROOT)/tools/check-source.py"
 	plutil -lint "$(PROJECT_ROOT)/livecontainer/Info.plist"
 	plutil -lint "$(PROJECT_ROOT)/package/IsaacDebugConsole.plist"
@@ -91,18 +103,22 @@ release:
 	$(MAKE) livecontainer EXTRA_CFLAGS='-Wall -Wextra -Werror'
 	$(MAKE) embedded EXTRA_CFLAGS='-Wall -Wextra -Werror'
 	$(MAKE) audit EXTRA_CFLAGS='-Wall -Wextra -Werror'
+	$(MAKE) playcover EXTRA_CFLAGS='-Wall -Wextra -Werror'
 	mkdir -p "$(PROJECT_ROOT)/dist"
 	cp "$(DYLIB)" "$(PROJECT_ROOT)/dist/IsaacDebugConsole.dylib"
+	cp "$(PLAYCOVER_DYLIB)" "$(PROJECT_ROOT)/dist/IsaacDebugConsole-PlayCover.dylib"
 	cp "$(DEB)" "$(PROJECT_ROOT)/dist/IsaacDebugConsole-rootless.deb"
 	cp "$(LC_ZIP)" "$(PROJECT_ROOT)/dist/IsaacDebugConsole-LiveContainer.framework.zip"
 	cd "$(PROJECT_ROOT)/dist" && shasum -a 256 \
 		IsaacDebugConsole.dylib \
+		IsaacDebugConsole-PlayCover.dylib \
 		IsaacDebugConsole-rootless.deb \
 		IsaacDebugConsole-LiveContainer.framework.zip \
 		IsaacDebugConsole-Embedded.zip > SHA256SUMS
 	rm -rf "$(FULL_STAGE)" "$(FULL_ZIP)"
 	mkdir -p "$(FULL_STAGE)/docs"
 	cp "$(PROJECT_ROOT)/dist/IsaacDebugConsole.dylib" \
+		"$(PROJECT_ROOT)/dist/IsaacDebugConsole-PlayCover.dylib" \
 		"$(PROJECT_ROOT)/dist/IsaacDebugConsole-rootless.deb" \
 		"$(PROJECT_ROOT)/dist/IsaacDebugConsole-LiveContainer.framework.zip" \
 		"$(PROJECT_ROOT)/dist/IsaacDebugConsole-Embedded.zip" \

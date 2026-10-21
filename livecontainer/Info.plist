@@ -15,9 +15,9 @@
     <key>CFBundlePackageType</key>
     <string>FMWK</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.3.1</string>
+    <string>0.3.2</string>
     <key>CFBundleVersion</key>
-    <string>6</string>
+    <string>7</string>
     <key>MinimumOSVersion</key>
     <string>15.0</string>
 </dict>
