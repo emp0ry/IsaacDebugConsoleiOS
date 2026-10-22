@@ -30,10 +30,12 @@ game executable, save data, DLC, or copyrighted game database is distributed.
 Pause an active run and a **Console** button appears in the lower-left corner. It automatically
 hides during gameplay and outside a run.
 
-With a hardware keyboard, pause the run and press the **grave/backtick key (`)** to open or
-close the console. This also supports PlayCover's Mac Catalyst host. Hold-to-repeat is ignored;
-the shortcut does not insert a backtick into the command field or intercept Steam login fields.
-The run must already be paused, just as when using the touch button.
+With a hardware keyboard, press the **grave/backtick key (`)** during gameplay to open the
+console and pause through Isaac's native pause menu. Press it again, press **Esc**, or close the console to
+resume only if the console paused this same run. If the game was already paused, it stays
+paused. This also supports PlayCover's Mac Catalyst host. Hold-to-repeat is ignored; the shortcut
+does not insert a backtick into the command field or intercept Steam login fields. Opening is
+disabled during native transitions and cinematics.
 
 The overlay contains:
 
@@ -44,8 +46,9 @@ The overlay contains:
 - A separate keyboard hide/show arrow
 - A **Run** button and Return-key execution
 
-The overlay is attached to Isaac's existing window rather than creating a second app window.
-Touches outside the console continue to reach the game.
+The console fills Isaac's existing window, follows window resizing and leaves room for the
+software keyboard. Controls and text are larger on macOS. It does not create another window
+or change the app's macOS fullscreen mode. When closed, its overlay does not block the game.
 
 ## Commands
 

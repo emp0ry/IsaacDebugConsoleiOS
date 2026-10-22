@@ -10,6 +10,9 @@ void IDCLog(NSString *format, ...) { (void)format; }
 - (NSString *)executableUUID { return @"HOST-CHECK"; }
 - (BOOL)isSupportedBuild { return YES; }
 - (IDCNativeSnapshot *)refreshSnapshot { return nil; }
+- (BOOL)beginConsolePause { return YES; }
+- (void)endConsolePause {}
+- (void)cancelConsolePauseOwnership {}
 - (NSString *)giveCollectible:(NSInteger)value { (void)value; return nil; }
 - (NSString *)removeCollectible:(NSInteger)value { (void)value; return nil; }
 - (NSString *)spawnEntityType:(NSInteger)t variant:(NSInteger)v subtype:(NSInteger)s {

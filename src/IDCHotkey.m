@@ -21,8 +21,11 @@
 
 @interface IDCHotkey ()
 @property(nonatomic, copy) BOOL (^handler)(void);
+@property(nonatomic, copy) BOOL (^closeHandler)(void);
 @property(nonatomic, strong, nullable) id desktopMonitor;
 @property(nonatomic) BOOL keyHeld;
+@property(nonatomic) BOOL escapeHeld;
+@property(nonatomic) BOOL escapeConsumed;
 - (BOOL)handleEvent:(UIEvent *)event;
 @end
 
@@ -37,8 +40,11 @@ static void IDCSendEvent(id application, SEL selector, UIEvent *event) {
 @implementation IDCHotkey
 
 - (instancetype)initWithHandler:(BOOL (^)(void))handler {
+    return [self initWithHandler:handler closeHandler:nil];
+}
+- (instancetype)initWithHandler:(BOOL (^)(void))handler closeHandler:(BOOL (^)(void))closeHandler {
     self = [super init];
-    if (self) _handler = [handler copy];
+    if (self) { _handler = [handler copy]; _closeHandler = [closeHandler copy]; }
     return self;
 }
 
@@ -53,6 +59,21 @@ static void IDCSendEvent(id application, SEL selector, UIEvent *event) {
 - (void)resetHeldKey:(NSNotification *)notification {
     (void)notification;
     self.keyHeld = NO;
+    self.escapeHeld = NO; self.escapeConsumed = NO;
+}
+
+- (BOOL)escapeDown:(BOOL)down repeat:(BOOL)repeat modified:(BOOL)modified {
+    if (!down) {
+        BOOL handled=self.escapeConsumed;
+        self.escapeHeld=NO; self.escapeConsumed=NO;
+        return handled;
+    }
+    if (self.escapeHeld) return self.escapeConsumed;
+    self.escapeHeld=YES;
+    self.escapeConsumed=!repeat && !modified &&
+        UIApplication.sharedApplication.applicationState==UIApplicationStateActive &&
+        self.closeHandler && self.closeHandler();
+    return self.escapeConsumed;
 }
 
 - (BOOL)keyDown:(BOOL)down repeat:(BOOL)repeat {
@@ -80,13 +101,18 @@ static void IDCSendEvent(id application, SEL selector, UIEvent *event) {
         UIKeyModifierFlags modifiers = UIKeyModifierShift | UIKeyModifierControl |
             UIKeyModifierAlternate | UIKeyModifierCommand;
         BOOL grave = key && key.keyCode == UIKeyboardHIDUsageKeyboardGraveAccentAndTilde;
+        BOOL escape = key && key.keyCode == UIKeyboardHIDUsageKeyboardEscape;
         BOOL released = press.phase == UIPressPhaseEnded || press.phase == UIPressPhaseCancelled;
-        if (!grave || (!released && (key.modifierFlags & modifiers))) {
+        if ((!grave && !escape) || (grave && !released && (key.modifierFlags & modifiers))) {
             allHandled = NO;
             continue;
         }
         BOOL handled = NO;
-        if (press.phase == UIPressPhaseBegan) handled = [self keyDown:YES repeat:NO];
+        if (escape) {
+            handled=self.escapeConsumed;
+            if (press.phase==UIPressPhaseBegan || released)
+                handled=[self escapeDown:!released repeat:NO modified:!released && (key.modifierFlags & modifiers)];
+        } else if (press.phase == UIPressPhaseBegan) handled = [self keyDown:YES repeat:NO];
         else if (released) handled = [self keyDown:NO repeat:NO];
         else handled = self.keyHeld;
         if (!handled) allHandled = NO;
@@ -122,14 +148,16 @@ static void IDCSendEvent(id application, SEL selector, UIEvent *event) {
         self.desktopMonitor = [events addLocalMonitorForEventsMatchingMask:(1UL << 10) | (1UL << 11)
             handler:^id(id<IDCDesktopKeyEvent> event) {
                 IDCHotkey *strongSelf = weakSelf;
-                if (!strongSelf || event.keyCode != 50) return event;
+                if (!strongSelf || (event.keyCode != 50 && event.keyCode != 53)) return event;
                 BOOL released = event.type == 11;
                 NSUInteger modifiers = (1UL << 17) | (1UL << 18) | (1UL << 19) | (1UL << 20);
+                if (event.keyCode==53) return [strongSelf escapeDown:!released repeat:event.isARepeat
+                    modified:!released && (event.modifierFlags & modifiers)] ? nil : event;
                 if (!released && (event.modifierFlags & modifiers)) return event;
                 return [strongSelf keyDown:!released repeat:event.isARepeat] ? nil : event;
             }];
     }
-    IDCLog(@"grave-key shortcut installed (%@)",
+    IDCLog(@"grave toggle and Escape close shortcuts installed (%@)",
            self.desktopMonitor ? @"UIKit + Catalyst" : @"UIKit hardware keyboard");
 }
 @end

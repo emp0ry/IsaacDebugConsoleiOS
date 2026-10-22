@@ -90,6 +90,12 @@ playcover: dylib
 test:
 	mkdir -p build
 	xcrun --sdk macosx clang -isysroot "$(MACSDK)" -fobjc-arc -fblocks -Wall -Wextra -Werror \
+		-Itools/check_support -Iinclude src/IDCHotkey.m tools/check_hotkey.m -framework Foundation -o build/check_hotkey
+	build/check_hotkey
+	build/check_hotkey reverse
+	xcrun --sdk macosx clang++ -isysroot "$(MACSDK)" -std=c++17 -Wall -Wextra -Werror -Iinclude tools/check_console_policy.cpp -o build/check_console_policy
+	build/check_console_policy
+	xcrun --sdk macosx clang -isysroot "$(MACSDK)" -fobjc-arc -fblocks -Wall -Wextra -Werror \
 		-Iinclude src/IDCCommandEngine.m src/IDCItemCatalog.m tools/check_commands.m \
 		-framework Foundation -o build/check_commands
 	build/check_commands

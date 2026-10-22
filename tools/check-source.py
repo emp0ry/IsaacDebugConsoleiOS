@@ -38,9 +38,17 @@ assert "UIKeyboardHIDUsageKeyboardGraveAccentAndTilde" in hotkey
 assert "UIPressesEvent" in hotkey
 assert "addLocalMonitorForEventsMatchingMask:" in hotkey
 assert "isARepeat" in hotkey and "keyHeld" in hotkey
+assert "UIKeyboardHIDUsageKeyboardEscape" in hotkey and "escapeConsumed" in hotkey
+assert "closeFromKeyboard" in controller
+assert "com.emp0ry.isaacconsole.closeForEscape" in controller
 assert "gOriginalSendEvent(application, selector, event)" in hotkey
 assert "hasOtherTextInput:" in controller and "toggleFromKeyboard" in controller
-assert "snapshot.pauseStateAvailable || !snapshot.paused" in controller
+assert "beginConsolePause" in controller and "endConsolePause" in controller
+assert "snapshot.presentationVisible" in controller
+assert "IDCFullPanel" in controller
+assert "MIN(760" not in controller and "MIN(390" not in controller
+assert "_consolePause.CanResume" in native and "state.pause==1" in native
+assert "PauseSignaturesMatch" in native and "IsaacPresentation::Capture" in native
 assert '@"aliases": @[@"rs"]' in engine
 assert "RestartSignaturesMatch" in native and "image+0x672568" in native
 assert "WritableMemory" in native and "pending ||" in native

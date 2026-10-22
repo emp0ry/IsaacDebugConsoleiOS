@@ -1,5 +1,8 @@
 #import "IDCNativeBridge.h"
 #import "IDCLogger.h"
+#include "IsaacPresentationState.hpp"
+#include "IDCConsolePolicy.hpp"
+#import <UIKit/UIKit.h>
 
 #import <mach-o/dyld.h>
 #import <mach-o/loader.h>
@@ -299,6 +302,18 @@ static bool RestartSignaturesMatch(const mach_header_64 *header) {
         if (!MatchPrologue(header,signature.offset,signature.words.data(),4)) return false;
     return true;
 }
+static bool PauseSignaturesMatch(const mach_header_64 *header) {
+    struct Signature { uintptr_t rva; std::array<uint32_t,4> words; };
+    const Signature signatures[]={
+        {0x8a1d38,{0xd10143ff,0xa9015ff8,0xa90257f6,0xa9034ff4}},
+        {0x8a1f08,{0xa9be4ff4,0xa9017bfd,0x910043fd,0xb942b808}},
+        {0x670ca8,{0xa9be4ff4,0xa9017bfd,0x910043fd,0xaa0003f3}},
+        {0x8a179c,{0x97f74134,0x340001a0,0xaa1303e0,0x94000164}},
+        {0x8a187c,{0xaa1303e0,0x940001a2,0xf9400320,0xa9457bfd}},
+    };
+    for (const auto& s:signatures) if (!MatchPrologue(header,s.rva,s.words.data(),4)) return false;
+    return true;
+}
 }  // namespace
 
 @implementation IDCNativeSnapshot
@@ -320,6 +335,8 @@ static bool RestartSignaturesMatch(const mach_header_64 *header) {
     NSUInteger _playerVectorOffset;
     vm_address_t _currentPlayer;
     IDCNativeSnapshot *_lastSnapshot;
+    bool _presentationReady,_pauseReady;
+    IsaacConsole::PauseLease _consolePause;
 }
 @property(nonatomic, copy) NSString *executableUUID;
 @property(nonatomic, getter=isSupportedBuild) BOOL supportedBuild;
@@ -340,6 +357,9 @@ static bool RestartSignaturesMatch(const mach_header_64 *header) {
             _playerVTables = LocatePlayerVTables(
                 _isaacHeader, _isaacSlide, _playerVTableCount);
             _supportedBuild = _playerVTableCount > 0;
+            _presentationReady=IsaacPresentation::Validate(reinterpret_cast<uintptr_t>(_isaacHeader),ReadMemory);
+            _pauseReady=PauseSignaturesMatch(_isaacHeader);
+            IDCLog(@"presentation gate %@; native console pause %@",_presentationReady?@"validated":@"rejected",_pauseReady?@"validated":@"rejected");
         }
         IDCLog(@"native bridge %@ for UUID %@ (%lu player vtables)",
                _supportedBuild ? @"enabled" : @"disabled", _executableUUID,
@@ -439,6 +459,9 @@ static bool RestartSignaturesMatch(const mach_header_64 *header) {
 
     uint32_t seed = 0;
     if (ReadMemory(game + kGameRunSeedOffset, &seed, sizeof(seed))) snapshot.runSeed = seed;
+    IsaacPresentation::State presentation;
+    snapshot.presentationVisible=_presentationReady && IsaacPresentation::Capture(
+        reinterpret_cast<uintptr_t>(_isaacHeader),ReadMemory,presentation) && presentation.RunVisible(true);
     int32_t pauseState = -1;
     if (ReadMemory(game + kGamePauseStateOffset, &pauseState, sizeof(pauseState)) &&
         pauseState >= 0 && pauseState <= 3) {
@@ -484,11 +507,46 @@ static bool RestartSignaturesMatch(const mach_header_64 *header) {
     if (!self.supportedBuild) return @"Unsupported Isaac executable; mutation disabled.";
     IDCNativeSnapshot *snapshot = [self refreshSnapshot];
     if (!snapshot.inGame || !_currentPlayer) return @"No active player was found.";
+    if (!snapshot.presentationVisible) return @"Wait for the transition or cutscene to finish.";
     if (!snapshot.pauseStateAvailable || !snapshot.paused) {
         return @"Pause the run before using modifying commands.";
     }
     return nil;
 }
+
+- (BOOL)beginConsolePause {
+    if (!NSThread.isMainThread || !_pauseReady || UIApplication.sharedApplication.applicationState!=UIApplicationStateActive) return NO;
+    IDCNativeSnapshot *snapshot=[self refreshSnapshot];
+    if (!snapshot.supportedBuild || !snapshot.inGame || !snapshot.presentationVisible || !snapshot.pauseStateAvailable) return NO;
+    _consolePause.Clear();
+    if (snapshot.paused) return YES;
+    uintptr_t base=reinterpret_cast<uintptr_t>(_isaacHeader);
+    IsaacPresentation::State state;
+    if (!IsaacPresentation::Capture(base,ReadMemory,state) || !state.RunVisible(false) ||
+        !WritableMemory(state.game+0x10dd20,0x80d10) || !WritableMemory(state.manager,0x27bcca)) return NO;
+    using Action=void (*)(void *);
+    reinterpret_cast<Action>(base+0x8a1d38)(reinterpret_cast<void *>(state.game+0x10dd20));
+    int32_t pause=-1;
+    if (!ReadMemory(state.game+kGamePauseStateOffset,&pause,4) || pause!=1) return NO;
+    _consolePause.Take(state.game,state.seed);
+    IDCLog(@"console opened from gameplay: native pause owned for this run");
+    return YES;
+}
+- (void)endConsolePause {
+    if (!NSThread.isMainThread || !_pauseReady) { _consolePause.Clear(); return; }
+    uintptr_t base=reinterpret_cast<uintptr_t>(_isaacHeader);
+    IsaacPresentation::State state;
+    bool stable=UIApplication.sharedApplication.applicationState==UIApplicationStateActive &&
+        IsaacPresentation::Capture(base,ReadMemory,state) && state.RunVisible(true);
+    bool resume=_consolePause.CanResume(state.game,state.seed,stable,state.pause==1);
+    _consolePause.Clear();
+    if (!resume || !WritableMemory(state.game+0x10dd20,0x80d10) || !WritableMemory(state.manager,0x27bcca)) return;
+    using Action=void (*)(void *);
+    reinterpret_cast<Action>(base+0x8a1f08)(reinterpret_cast<void *>(state.game+0x10dd20));
+    reinterpret_cast<Action>(base+0x670ca8)(reinterpret_cast<void *>(state.manager));
+    IDCLog(@"console closed: native resume of its own pause");
+}
+- (void)cancelConsolePauseOwnership { _consolePause.Clear(); }
 
 - (BOOL)matchesFunctionAtOffset:(uintptr_t)offset
                        prologue:(const uint32_t *)prologue

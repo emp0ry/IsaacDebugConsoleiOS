@@ -3,15 +3,18 @@
 #import "IDCLogger.h"
 #import "IDCNativeBridge.h"
 #import "IDCHotkey.h"
+#include "IDCConsoleLayout.h"
 
 #import <UIKit/UIKit.h>
 
 static const NSInteger IDCInteractiveTag = 0x1DC;
 
 @interface IDCPassthroughView : UIView
+@property(nonatomic, copy) void (^layoutHandler)(void);
 @end
 
 @implementation IDCPassthroughView
+- (void)layoutSubviews { [super layoutSubviews]; if (self.layoutHandler) self.layoutHandler(); }
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     UIView *hit = [super hitTest:point withEvent:event];
     if (!hit || hit == self) return nil;
@@ -72,15 +75,23 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
                        name:UIKeyboardWillChangeFrameNotification object:nil];
         [center addObserver:self selector:@selector(keyboardWillHide:)
                        name:UIKeyboardWillHideNotification object:nil];
+        [center addObserver:self selector:@selector(suspendConsole)
+                       name:UIApplicationWillResignActiveNotification object:nil];
+        [center addObserver:self selector:@selector(suspendConsole)
+                       name:@"NSApplicationWillResignActiveNotification" object:nil];
+        [center addObserver:self selector:@selector(escapeCloseRequested:)
+                       name:@"com.emp0ry.isaacconsole.closeForEscape" object:nil];
         [self attachIfNeeded];
         __weak IDCConsoleController *weakSelf = self;
         self.hotkey = [[IDCHotkey alloc] initWithHandler:^BOOL {
             return [weakSelf toggleFromKeyboard];
+        } closeHandler:^BOOL {
+            return [weakSelf closeFromKeyboard];
         }];
         [self.hotkey start];
-        self.timer = [NSTimer scheduledTimerWithTimeInterval:0.25 target:self
-                                                    selector:@selector(tick:)
-                                                    userInfo:nil repeats:YES];
+        self.timer = [NSTimer timerWithTimeInterval:0.1 target:self
+                                          selector:@selector(tick:) userInfo:nil repeats:YES];
+        [NSRunLoop.mainRunLoop addTimer:self.timer forMode:NSRunLoopCommonModes];
     });
 }
 
@@ -120,6 +131,8 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     root.backgroundColor = UIColor.clearColor;
     root.userInteractionEnabled = YES;
     root.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    __weak IDCConsoleController *weakSelf=self;
+    root.layoutHandler=^{ [weakSelf layoutConsole]; };
 
     UIButton *consoleButton = [self buttonWithTitle:@"Console" action:@selector(toggleConsole:)];
     consoleButton.frame = CGRectMake(14, window.bounds.size.height - 48, 82, 34);
@@ -133,7 +146,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 
     UIView *panel = [[UIView alloc] initWithFrame:CGRectZero];
     panel.backgroundColor = [UIColor colorWithRed:0.025 green:0.030 blue:0.038 alpha:0.97];
-    panel.layer.cornerRadius = 12;
+    panel.layer.cornerRadius = 0;
     panel.layer.borderWidth = 1;
     panel.layer.borderColor = [UIColor colorWithRed:0.35 green:0.78 blue:1 alpha:0.7].CGColor;
     panel.clipsToBounds = YES;
@@ -166,7 +179,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     output.selectable = YES;
     output.layer.cornerRadius = 6;
     output.textContainerInset = UIEdgeInsetsMake(7, 8, 7, 8);
-    output.text = @"Isaac Debug Console iOS 0.3.2\nType help for every command. Suggestions update while you type.\nPause the run, then press ` to toggle the console.\n";
+    output.text = @"Isaac Debug Console iOS 0.3.2\nType help for every command. Suggestions update while you type.\nPress ` to open and pause the game. Press ` or Esc to close.\n";
     [panel addSubview:output];
 
     UITableView *suggestionsTable = [[UITableView alloc] initWithFrame:CGRectZero
@@ -238,39 +251,43 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 - (void)layoutConsole {
     if (!self.rootView || !self.panel) return;
     CGFloat width = self.rootView.bounds.size.width;
-    CGFloat usableHeight = MAX(180, self.rootView.bounds.size.height - self.keyboardOverlap);
-    CGFloat panelWidth = MIN(760, MAX(300, width - 20));
-    CGFloat panelHeight = MIN(390, MAX(180, usableHeight - 14));
-    self.panel.frame = CGRectMake((width - panelWidth) * 0.5,
-                                  MAX(5, (usableHeight - panelHeight) * 0.5),
-                                  panelWidth, panelHeight);
+    IDCPanelRect rect=IDCFullPanel(width,self.rootView.bounds.size.height,self.keyboardOverlap);
+    CGFloat panelWidth=rect.width,panelHeight=rect.height;
+    self.panel.frame=CGRectMake(rect.x,rect.y,panelWidth,panelHeight);
+    UIEdgeInsets safe=self.rootView.safeAreaInsets;
+    CGFloat left=MAX(8,safe.left+8),right=MAX(8,safe.right+8),top=MAX(6,safe.top+6);
+    CGFloat uiScale=NSClassFromString(@"NSApplication") ? MIN(1.6,MAX(1.15,width/900)) : 1;
+    CGFloat controlHeight=34*uiScale,headerHeight=34*uiScale;
+    self.outputView.font=[UIFont monospacedSystemFontOfSize:12*uiScale weight:UIFontWeightRegular];
+    self.inputField.font=[UIFont monospacedSystemFontOfSize:13*uiScale weight:UIFontWeightRegular];
+    self.suggestionsTable.rowHeight=32*uiScale;
     UILabel *title = [self.panel viewWithTag:1001];
     UIButton *close = [self.panel viewWithTag:1002];
-    title.frame = CGRectMake(12, 7, panelWidth * 0.48, 28);
-    close.frame = CGRectMake(panelWidth - 43, 6, 35, 30);
-    self.statusLabel.frame = CGRectMake(panelWidth * 0.43, 8, panelWidth * 0.50 - 49, 26);
+    title.font=[UIFont monospacedSystemFontOfSize:15*uiScale weight:UIFontWeightBold];
+    title.frame = CGRectMake(left,top,panelWidth*.48,headerHeight);
+    close.frame = CGRectMake(panelWidth-right-controlHeight,top,controlHeight,controlHeight);
+    self.statusLabel.frame = CGRectMake(panelWidth*.48,top,MAX(0,panelWidth*.52-right-controlHeight-12),headerHeight);
 
-    CGFloat bottomY = panelHeight - 44;
-    CGFloat historyWidth = 34;
-    CGFloat keyboardWidth = 34;
-    CGFloat runWidth = 52;
-    self.previousButton.frame = CGRectMake(8, bottomY, historyWidth, 34);
-    self.nextButton.frame = CGRectMake(46, bottomY, historyWidth, 34);
-    self.runButton.frame = CGRectMake(panelWidth - runWidth - 8, bottomY, runWidth, 34);
+    CGFloat bottomY = MAX(top+headerHeight,panelHeight-controlHeight-MAX(8,self.keyboardOverlap>0?8:safe.bottom+8));
+    CGFloat historyWidth = controlHeight;
+    CGFloat keyboardWidth = controlHeight;
+    CGFloat runWidth = 52*uiScale;
+    self.previousButton.frame = CGRectMake(left,bottomY,historyWidth,controlHeight);
+    self.nextButton.frame = CGRectMake(left+historyWidth+4,bottomY,historyWidth,controlHeight);
+    self.runButton.frame = CGRectMake(panelWidth-runWidth-right,bottomY,runWidth,controlHeight);
     self.keyboardButton.frame = CGRectMake(CGRectGetMinX(self.runButton.frame) - keyboardWidth - 4,
-                                           bottomY, keyboardWidth, 34);
+                                           bottomY, keyboardWidth, controlHeight);
     CGFloat inputX = CGRectGetMaxX(self.nextButton.frame) + 4;
     self.inputField.frame = CGRectMake(inputX, bottomY,
-        MAX(72, CGRectGetMinX(self.keyboardButton.frame) - inputX - 4), 34);
+        MAX(1, CGRectGetMinX(self.keyboardButton.frame) - inputX - 4), controlHeight);
 
     CGFloat suggestionHeight = self.suggestions.count
-        ? MIN(160, self.suggestions.count * self.suggestionsTable.rowHeight) : 0;
-    CGFloat outputTop = 40;
+        ? MIN(MIN(220,MAX(0,(bottomY-top-headerHeight)*.35)),self.suggestions.count*self.suggestionsTable.rowHeight) : 0;
+    CGFloat outputTop = top+headerHeight+4;
     CGFloat outputBottom = bottomY - 6 - suggestionHeight;
-    self.outputView.frame = CGRectMake(8, outputTop, panelWidth - 16,
-                                       MAX(60, outputBottom - outputTop));
-    self.suggestionsTable.frame = CGRectMake(8, CGRectGetMaxY(self.outputView.frame) + 4,
-                                              panelWidth - 16, suggestionHeight);
+    self.outputView.frame = CGRectMake(left,outputTop,MAX(1,panelWidth-left-right),MAX(1,outputBottom-outputTop));
+    self.suggestionsTable.frame = CGRectMake(left,CGRectGetMaxY(self.outputView.frame)+4,
+                                              MAX(1,panelWidth-left-right),suggestionHeight);
     self.suggestionsTable.hidden = suggestionHeight <= 0;
 }
 
@@ -278,24 +295,26 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     (void)timer;
     [self attachIfNeeded];
     IDCNativeSnapshot *snapshot = [self.bridge refreshSnapshot];
-    BOOL available = snapshot.supportedBuild && snapshot.inGame &&
-        snapshot.pauseStateAvailable && snapshot.paused;
-    self.consoleButton.hidden = !available;
+    BOOL available = snapshot.supportedBuild && snapshot.inGame && snapshot.presentationVisible &&
+        snapshot.pauseStateAvailable;
+    self.consoleButton.hidden = !(available && snapshot.paused);
     self.statusLabel.text = snapshot.inGame
         ? [NSString stringWithFormat:@"%@ · seed %08X", snapshot.paused ? @"PAUSED" : @"PLAYING",
            snapshot.runSeed]
         : @"NO ACTIVE RUN";
-    if (!available && !self.panel.hidden) [self closeConsole:nil];
-    if (!self.panel.hidden) [self.rootView bringSubviewToFront:self.panel];
+    if ((!available || !snapshot.paused) && !self.panel.hidden) {
+        [self.bridge cancelConsolePauseOwnership]; [self closeConsole:nil];
+    }
+    if (!self.panel.hidden) { [self.rootView bringSubviewToFront:self.panel]; [self layoutConsole]; }
 }
 
 - (void)toggleConsole:(UIButton *)sender {
     (void)sender;
-    IDCNativeSnapshot *snapshot = [self.bridge refreshSnapshot];
-    if (!snapshot.supportedBuild || !snapshot.inGame ||
-        !snapshot.pauseStateAvailable || !snapshot.paused) return;
     if (self.panel.hidden) {
+        UIWindow *window=[self gameWindow];
+        if (!window || window.rootViewController.presentedViewController || ![self.bridge beginConsolePause]) return;
         self.panel.hidden = NO;
+        [window bringSubviewToFront:self.rootView];
         [self.rootView bringSubviewToFront:self.panel];
         [self layoutConsole];
         [self.inputField becomeFirstResponder];
@@ -306,6 +325,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 
 - (BOOL)hasOtherTextInput:(UIView *)view {
     if (view.isFirstResponder && view != self.inputField &&
+        ![view isKindOfClass:NSClassFromString(@"AAPLOpenGLView")] &&
         [view conformsToProtocol:@protocol(UITextInput)]) return YES;
     for (UIView *child in view.subviews) {
         if ([self hasOtherTextInput:child]) return YES;
@@ -315,13 +335,29 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
 
 - (BOOL)toggleFromKeyboard {
     [self attachIfNeeded];
-    if (!self.panel || [self hasOtherTextInput:[self gameWindow]]) return NO;
+    UIWindow *window=[self gameWindow];
+    if (!self.panel || !window.isKeyWindow || window.rootViewController.presentedViewController) return NO;
     if (!self.panel.hidden) {
-        [self closeConsole:nil];
-        return YES;
+        return [self closeFromKeyboard];
     }
+    if ([self hasOtherTextInput:window]) return NO;
     [self toggleConsole:nil];
     return !self.panel.hidden;
+}
+
+- (BOOL)closeFromKeyboard {
+    UIWindow *window=[self gameWindow];
+    if (!self.panel || self.panel.hidden || !window.isKeyWindow ||
+        window.rootViewController.presentedViewController ||
+        UIApplication.sharedApplication.applicationState!=UIApplicationStateActive) return NO;
+    [self closeConsole:nil];
+    return YES;
+}
+- (void)escapeCloseRequested:(NSNotification *)notification {
+    // Synchronous optional coordination with Isaac Fixes. Whichever key
+    // monitor runs first owns Escape, including its repeat and key-up events.
+    if ([notification.object isKindOfClass:NSMutableDictionary.class] && [self closeFromKeyboard])
+        ((NSMutableDictionary *)notification.object)[@"handled"]=@YES;
 }
 
 - (void)closeConsole:(UIButton *)sender {
@@ -329,7 +365,12 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     self.panel.hidden = YES;
     self.keyboardOverlap = 0;
     [self.inputField resignFirstResponder];
+    [self.bridge endConsolePause];
     [self layoutConsole];
+}
+- (void)suspendConsole {
+    [self.bridge cancelConsolePauseOwnership];
+    [self closeConsole:nil];
 }
 
 - (void)appendLine:(NSString *)line {

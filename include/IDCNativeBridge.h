@@ -7,6 +7,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic) BOOL inGame;
 @property(nonatomic) BOOL pauseStateAvailable;
 @property(nonatomic) BOOL paused;
+@property(nonatomic) BOOL presentationVisible;
 @property(nonatomic, copy) NSString *executableUUID;
 @property(nonatomic) uint32_t runSeed;
 @property(nonatomic) NSInteger roomType;
@@ -21,6 +22,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, readonly, getter=isSupportedBuild) BOOL supportedBuild;
 
 - (IDCNativeSnapshot *)refreshSnapshot;
+// Use the real native pause/menu path. Closing resumes only a pause owned by
+// this console in the same run; opening an already paused run leaves it paused.
+- (BOOL)beginConsolePause;
+- (void)endConsolePause;
+- (void)cancelConsolePauseOwnership;
 - (nullable NSString *)giveCollectible:(NSInteger)collectibleID;
 - (nullable NSString *)removeCollectible:(NSInteger)collectibleID;
 - (nullable NSString *)spawnEntityType:(NSInteger)type
