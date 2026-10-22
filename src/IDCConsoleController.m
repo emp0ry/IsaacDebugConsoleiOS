@@ -179,7 +179,7 @@ static const NSInteger IDCInteractiveTag = 0x1DC;
     output.selectable = YES;
     output.layer.cornerRadius = 6;
     output.textContainerInset = UIEdgeInsetsMake(7, 8, 7, 8);
-    output.text = @"Isaac Debug Console iOS 0.3.2\nType help for every command. Suggestions update while you type.\nPress ` to open and pause the game. Press ` or Esc to close.\n";
+    output.text = @"Isaac Debug Console iOS 0.4.0\nType help for every command. Suggestions update while you type.\nPress ` to open and pause the game. Press ` or Esc to close.\n";
     [panel addSubview:output];
 
     UITableView *suggestionsTable = [[UITableView alloc] initWithFrame:CGRectZero

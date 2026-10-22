@@ -52,8 +52,9 @@ assert "PauseSignaturesMatch" in native and "IsaacPresentation::Capture" in nati
 assert '@"aliases": @[@"rs"]' in engine
 assert "RestartSignaturesMatch" in native and "image+0x672568" in native
 assert "WritableMemory" in native and "pending ||" in native
-assert "0.3.2" in engine and "0.3.2" in controller
-notes = (ROOT / "docs/RELEASE_NOTES_v0.3.2.md").read_text()
+version = next(line.split(":", 1)[1].strip() for line in (ROOT / "package/control").read_text().splitlines() if line.startswith("Version:"))
+assert f'@"{version}"' in engine and f"Isaac Debug Console iOS {version}" in controller
+notes = (ROOT / f"docs/RELEASE_NOTES_v{version}.md").read_text()
 assert not notes.startswith("# ")
 
 for forbidden in ("MobileSubstrate", "substrate.h", "ElleKit", "/var/jb"):
