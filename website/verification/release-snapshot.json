@@ -1,0 +1,50 @@
+{
+  "repository": "IsaacDebugConsoleiOS",
+  "tag": "v0.4.0",
+  "url": "https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/tag/v0.4.0",
+  "published_at": "2026-10-22T11:50:40Z",
+  "assets": [
+    {
+      "name": "IsaacDebugConsole-Embedded.zip",
+      "url": "https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/download/v0.4.0/IsaacDebugConsole-Embedded.zip",
+      "size": 63727,
+      "state": "uploaded"
+    },
+    {
+      "name": "IsaacDebugConsole-Full-Build.zip",
+      "url": "https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/download/v0.4.0/IsaacDebugConsole-Full-Build.zip",
+      "size": 299231,
+      "state": "uploaded"
+    },
+    {
+      "name": "IsaacDebugConsole-LiveContainer.framework.zip",
+      "url": "https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/download/v0.4.0/IsaacDebugConsole-LiveContainer.framework.zip",
+      "size": 60076,
+      "state": "uploaded"
+    },
+    {
+      "name": "IsaacDebugConsole-PlayCover.dylib",
+      "url": "https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/download/v0.4.0/IsaacDebugConsole-PlayCover.dylib",
+      "size": 194512,
+      "state": "uploaded"
+    },
+    {
+      "name": "IsaacDebugConsole-rootless.deb",
+      "url": "https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/download/v0.4.0/IsaacDebugConsole-rootless.deb",
+      "size": 46856,
+      "state": "uploaded"
+    },
+    {
+      "name": "IsaacDebugConsole.dylib",
+      "url": "https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/download/v0.4.0/IsaacDebugConsole.dylib",
+      "size": 194512,
+      "state": "uploaded"
+    },
+    {
+      "name": "SHA256SUMS",
+      "url": "https://github.com/emp0ry/IsaacDebugConsoleiOS/releases/download/v0.4.0/SHA256SUMS",
+      "size": 496,
+      "state": "uploaded"
+    }
+  ]
+}

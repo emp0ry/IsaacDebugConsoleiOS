@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://isaacconsoleios.emp0ry.com/sitemap.xml

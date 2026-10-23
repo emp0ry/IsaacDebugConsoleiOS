@@ -1,0 +1,21 @@
+{
+  "name": "Isaac Debug Console",
+  "repository": "IsaacDebugConsoleiOS",
+  "host": "isaacconsoleios.emp0ry.com",
+  "kind": "console",
+  "port": 4181,
+  "version": "v0.4.0",
+  "assets": [
+    "IsaacDebugConsole-rootless.deb",
+    "IsaacDebugConsole-LiveContainer.framework.zip",
+    "IsaacDebugConsole-Embedded.zip",
+    "IsaacDebugConsole-PlayCover.dylib",
+    "IsaacDebugConsole.dylib",
+    "IsaacDebugConsole-Full-Build.zip",
+    "SHA256SUMS"
+  ],
+  "headline": [
+    "Pause the run.",
+    "Explore the possibilities."
+  ]
+}
