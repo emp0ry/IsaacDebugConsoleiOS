@@ -1,9 +1,0 @@
-{
-  "name": "Isaac Debug Console",
-  "url": "http://127.0.0.1:4181/",
-  "main_status": 200,
-  "managed_assets_checked": 13,
-  "no_missing_assets": true,
-  "module_mime_types_valid": true,
-  "browser_tested": false
-}
